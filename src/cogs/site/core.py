@@ -38,5 +38,5 @@ class Site(GuildCog):
         return self._app
 
     async def on_ready(self):
-        self.bot._config['flask_args'] = ('127.0.0.1', 80)
+        self.bot._config['flask_args'] = ('0.0.0.0', 80)
         self.thread = threading.Thread(target=self.app.run, args=self.bot._config['flask_args']).start()
