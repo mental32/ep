@@ -11,6 +11,9 @@ from src.core import _LIB_PATH
 
 _FLASK_BLUEPRINTS = _LIB_PATH.joinpath('cogs', 'site', 'blueprints')
 
+def _cast_py_import_path(path):
+    return str(path).replace('\\', '.').replace('/', '.')
+
 class Site(GuildCog):
     def __init__(self, bot):
         super().__init__(bot)
@@ -23,7 +26,7 @@ class Site(GuildCog):
 
         for file in os.listdir(f'{_FLASK_BLUEPRINTS}'):
             name = file.rsplit('.', maxsplit=1)[0]
-            lib = importlib.import_module(str(_FLASK_BLUEPRINTS).replace("\\", ".") + f'.{name}')
+            lib = importlib.import_module(f'{_cast_py_import_path(_FLASK_BLUEPRINTS)}.{name}')
 
             blueprint = getattr(lib, 'blueprint', None)
 
