@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import pathlib
 
@@ -26,14 +27,17 @@ class Bot(commands.Bot):
 
         super().__init__(*args, **kwargs)
 
+        with open('.data.json') as inf:
+            self._config = json.load(inf)
+
         for file in os.listdir(f'{_LIB_EXTS}'):
             _cut_off = -3
 
-            if file[-3:] != '.py':
-                continue
+            if os.path.isdir(f'{_LIB_EXTS.joinpath(file)}'):
+                _cut_off = len(file) + 1
 
-            elif file[:-1] in ('/', '\\'):
-                _cut_off = -1
+            elif file[-3:] != '.py':
+                continue
 
             self.load_extension(f'src.cogs.{file[:_cut_off]}')
 
@@ -44,6 +48,10 @@ class Bot(commands.Bot):
     def load_extension(self, *args, **kwargs):
         super().load_extension(*args, **kwargs)
         self.dispatch('ext_load', self.extensions[args[0]])
+
+    def _do_cleanup(self, *args, **kwargs):
+        super()._do_cleanup(*args, **kwargs)
+        os.kill(os.getpid(), 3)
 
     async def get_context(self, *args, **kwargs):
         ctx = await super().get_context(*args, **kwargs)
@@ -58,10 +66,7 @@ class Bot(commands.Bot):
         return ctx
 
     def run(self, *args, **kwargs):
-        with open('.data.json') as inf:
-            data = json.load(inf)
-
-        return super().run(data['token'])
+        return super().run(self._config['token'])
 
     async def on_connect(self):
         print('Connect...', end='')
