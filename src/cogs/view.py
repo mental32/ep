@@ -8,9 +8,10 @@ class General:
         remaining = {
             'Complete': [],
             'In progress': [
-                'PyDoc'
+                'Website'
             ],
             'Not implemented': [
+                'PyDoc'
                 'Python code sandbox',
                 'CPython bug/branch tracker',
                 'Forward PSF tweets?',
