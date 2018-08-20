@@ -22,7 +22,11 @@ class General:
 
     @commands.command(name='source')
     async def test_source(self, ctx):
-        await ctx.send('https://github.com/mental32/ep_bot')
+        return await ctx.send('https://github.com/mental32/ep_bot')
+
+    @commands.command(name='pep')
+    async def test_pep(self, ctx, pep_number: int):
+        return await ctx.send(f'https://www.python.org/dev/peps/pep-{str(pep_number).zfill(4)}/')
 
     @commands.command(name='profile')
     async def test_profile(self, ctx, member: discord.Member):
