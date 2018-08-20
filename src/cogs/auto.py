@@ -15,7 +15,7 @@ class Automation(GuildCog):
                     break
                 links.append(_PEP(int(pep)))
 
-            return await message.channel.send('\n'.join(output))
+            return await message.channel.send('\n'.join(links))
 
     async def on_member_join(self, member):
         if member.bot:
