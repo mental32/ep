@@ -1,3 +1,6 @@
+import asyncio
+
+
 class GuildCog:
     def __init__(self, bot):
         self.bot = bot
@@ -16,7 +19,10 @@ class GuildCog:
         return {role.name: role for role in self._guild.roles}
 
     async def __cog_init(self):
-        self._guild = _guild = self.bot.get_guild(455072636075245588)
+        while not hasattr(self.bot, '_guild'):
+            await asyncio.sleep(0)
+
+        self._guild = _guild = self.bot._guild
         self._general = _guild.get_channel(455072636075245590)
 
         _roles = self._roles

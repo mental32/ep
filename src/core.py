@@ -73,6 +73,7 @@ class Bot(commands.Bot):
 
     async def on_ready(self):
         print('ready!')
+        self._guild = self.get_guild(455072636075245588)
 
     async def on_ext_load(self, ext):
         print(f'Loaded: {repr(ext)}')
