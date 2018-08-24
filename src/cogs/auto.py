@@ -7,6 +7,9 @@ _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
 class Automation(GuildCog):
     async def on_message(self, message):
+        if message.author.bot:
+            return
+
         if message.content[:3] == 'PEP':
             links = []
 
@@ -18,7 +21,10 @@ class Automation(GuildCog):
             return await message.channel.send('\n'.join(links))
 
     async def on_member_join(self, member):
-        if member.bot:
+        if member.guild != self._guild:
+            return
+
+        elif member.bot:
             return await member.add_roles(self._bot_role)
 
         await member.add_roles(self._member_role)
