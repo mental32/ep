@@ -19,7 +19,7 @@ DEPENDENCIES = [
     },
     {
         'name': 'rapidjson',
-        'src': 'python-radidjson'
+        'src': 'python-rapidjson'
     }
 ]
 
