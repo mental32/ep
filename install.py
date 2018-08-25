@@ -45,7 +45,7 @@ def install_dependency(name, git=False, src=None, check=None):
     try:
         version = dependency_check(name, check)
     except ImportError:
-        status = subprocess.check_call(f'{PYTHON_PATH} -m pip install -U{" git+" if git else " "}{name if src is None else src}')
+        status = subprocess.check_call(f'{PYTHON_PATH} -m pip install -U{" git+" if git else " "}{name if src is None else src}', shell=True)
         dependency_check(name, check, exception=RuntimeError(f'fatal: Could not install dependency: {name}[{src}]'))
         return status, None
     else:
