@@ -10,7 +10,7 @@ class Automation(GuildCog):
         if message.author.bot:
             return
 
-        if message.content[:3] == 'PEP':
+        elif message.content[:3] == 'PEP':
             links = []
 
             for pep in message.content[3:].split():
