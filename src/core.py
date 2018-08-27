@@ -27,6 +27,9 @@ class Bot(commands.Bot):
 
         super().__init__(*args, **kwargs)
 
+        if not os.path.exists('.data.json'):
+            raise RuntimeError('fatal: ".data.json" is a file that must exist. (try using the --init argument)')
+
         with open('.data.json') as inf:
             self._config = json.load(inf)
 
