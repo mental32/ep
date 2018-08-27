@@ -7,8 +7,8 @@ _remaining_todo = {
         'Website'
     ],
     'Not implemented': [
-        'PyDoc'
-        'PyProfile'
+        'PyDoc',
+        'PyProfile',
         'Python code sandbox',
         'CPython bug/branch tracker',
         'Forward PSF tweets?',
