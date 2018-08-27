@@ -15,7 +15,7 @@ class GuildCog:
         self.bot.loop.create_task(self.__cog_init())
 
     @property
-    def _roles(self):
+    def _guild_roles(self):
         return {role.name: role for role in self._guild.roles}
 
     async def __cog_init(self):
@@ -25,7 +25,7 @@ class GuildCog:
         self._guild = _guild = self.bot._guild
         self._general = _guild.get_channel(455072636075245590)
 
-        _roles = self._roles
+        _roles = self._guild_roles
         self._member_role = _roles['Member']
         self._bot_role = _roles['Bot']
 
