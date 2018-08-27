@@ -17,10 +17,6 @@ DEPENDENCIES = [
     {
         'name': 'flask',
     },
-    {
-        'name': 'rapidjson',
-        'src': 'python-rapidjson'
-    }
 ]
 
 
