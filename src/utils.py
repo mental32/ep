@@ -9,10 +9,10 @@ class GuildCog:
             self.bot.loop.create_task(self.__cog_init())
 
     def __repr__(self):
-        return f'<Cog: {self!r}>'
+        return f'<Cog: {type(self)!r}>'
 
     async def on_ready(self):
-        self.bot.loop.create_task(self.__cog_init())
+        await self.__cog_init()
 
     @property
     def _guild_roles(self):
@@ -24,6 +24,7 @@ class GuildCog:
 
         self._guild = _guild = self.bot._guild
         self._general = _guild.get_channel(455072636075245590)
+        self._database = _guild.get_channel(489793386107240468)
 
         _roles = self._guild_roles
         self._member_role = _roles['Member']

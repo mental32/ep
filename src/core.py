@@ -52,6 +52,10 @@ class Bot(commands.Bot):
         super().load_extension(*args, **kwargs)
         self.dispatch('ext_load', self.extensions[args[0]])
 
+    def add_cog(self, klass, *args, **kwargs):
+        super().add_cog(klass, *args, **kwargs)
+        getattr(klass, f'_{type(klass).__name__}__cog_init', (lambda: None))()
+
     def _do_cleanup(self, *args, **kwargs):
         super()._do_cleanup(*args, **kwargs)
         os.kill(os.getpid(), 3)

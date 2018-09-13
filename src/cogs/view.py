@@ -29,12 +29,18 @@ class General:
     async def test_pep(self, ctx, pep_number: int):
         return await ctx.send(f'https://www.python.org/dev/peps/pep-{str(pep_number).zfill(4)}/')
 
-    @commands.command(name='profile')
-    async def test_profile(self, ctx, member: discord.Member = None):
-        member = member or ctx.author
-        em = discord.Embed(title=f'{member}\'s profile')
-        em.set_thumbnail(url=member.avatar_url)
-        await ctx.send(embed=em)
+    @commands.command(name='magic')
+    async def test_magic(self, ctx, number: int = None):
+        try:
+            datapoint = await ctx.bot.db.get(ctx.author.id)
+        except KeyError:
+            datapoint = await ctx.bot.db.set(ctx.author.id, number)
+
+        if number is None:
+            await ctx.send(datapoint.content)
+        else:
+            await datapoint.update(ctx.author.id, number)
+            await ctx.send('\N{OK HAND SIGN}')
 
 def setup(bot):
     bot.add_cog(General())
