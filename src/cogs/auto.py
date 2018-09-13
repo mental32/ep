@@ -11,14 +11,13 @@ class Automation(GuildCog):
             return
 
         elif message.content[:3] == 'PEP':
-            links = []
+            def _links():
+                for pep in message.content[3:].split():
+                    if not pep.isdigit():
+                        break
+                    yield _PEP(int(pep))
 
-            for pep in message.content[3:].split():
-                if not pep.isdigit():
-                    break
-                links.append(_PEP(int(pep)))
-
-            return await message.channel.send('\n'.join(links))
+            return await message.channel.send('\n'.join(_links()))
 
     async def on_member_join(self, member):
         if member.guild != self._guild:
