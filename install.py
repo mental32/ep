@@ -27,14 +27,13 @@ def install_dependency(name, git=False, src=None, check=None):
         try:
             module = importlib.import_module(name)
             if not pred(module):
-                raise ImportError
-            version = module.__version__
+                raise exception
+            else:
+                version = module.__version__
         finally:
-            try:
+            if 'module' in locals():
                 del module
                 del sys.modules[name]
-            except NameError:
-                pass
 
         return version
 
