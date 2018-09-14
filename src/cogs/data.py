@@ -22,7 +22,7 @@ class Datapoint:
     async def update(self, key, value):
         body = self.content
         body[key] = value
-        await self.message.edit(content=self._encode_json(obj))
+        await self.message.edit(content=self._encode_json(body))
         return self
 
     async def edit(self, obj):
