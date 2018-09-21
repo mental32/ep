@@ -34,6 +34,9 @@ class Bot(commands.Bot):
             self._config = json.load(inf)
 
         for file in os.listdir(f'{_LIB_EXTS}'):
+            if '__pycache__' in file:
+                continue
+
             _cut_off = -3
 
             if os.path.isdir(f'{_LIB_EXTS.joinpath(file)}'):
