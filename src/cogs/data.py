@@ -105,7 +105,7 @@ class Database(GuildCog):
         await super().on_ready()
         self.__set_database()
 
-    @commands.command(name='DB_init')
+    @commands.command(name='db_init')
     @commands.is_owner()
     async def test_dbinit(self, ctx, clear: bool = False):
         root = await self.handler._init_db(clear=clear)
