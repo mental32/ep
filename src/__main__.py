@@ -6,4 +6,7 @@ if '.' not in sys.path:
 from src import Bot
 
 if __name__ == '__main__':
-    sys.exit(Bot.quickstart())
+	try:
+		Bot.quickstart()
+	except RuntimeError as err:
+		sys.exit(err)
