@@ -12,6 +12,7 @@ html {
     background-color: #23272A; /* Black */
     overflow-x: hidden; /* Disable horizontal scroll */
     padding-top: 20px;
+    margin-left: 68px; /* Same as the width of the sidebar */
 }
 
 .iconnav {
@@ -25,9 +26,7 @@ html {
     left: 0;
     background-color: #23272A; /* Black */
     padding-top: 20px;
-	margin-left: 125px; /* Same as the width of the sidebar */
 
-    position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
@@ -63,7 +62,7 @@ html {
 
 /* Style page content */
 .main {
-    margin-left: 182px; /* Same as the width of the sidebar */
+    margin-left: 200px; /* Same as the width of the sidebar */
     color: #ffffff;
     position: absolute;
     bottom: 0;
