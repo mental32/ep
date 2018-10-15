@@ -2,35 +2,24 @@
 <html>
 <head>
 	<title>Efficient Python</title>
+	<script type="text/javascript" src="{{ url_for('static', filename='index.js') }}"></script>
 	<link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 <body>
-	<script type="text/javascript">
-		function Profile(guild_id){
-			var xhttp = new XMLHttpRequest();
-			xhttp.onreadystatechange = function() {
-				if (this.readyState == 4 && this.status == 200) {
-					console.log(this.responseText);
-					document.getElementById("main").innerHTML = this.responseText;
-				}
-			}
-			xhttp.open("GET", "profile/" + guild_id, true);
-			xhttp.send();
-		}
-	</script>
+	<div class="iconnav">
+	  <img src="{{ bot.user.avatar_url_as(format="png", size=64) }}"></img>
+		{% for guild in bot.guilds %}
+			<a href="#" onclick="profile({{ '"{0}"'.format(guild.id) }})""><img src="{{ guild.icon_url_as(format="png", size=64) }}"></a>
+		{% endfor %}
+	</div>
+
 	<div class="sidenav">
 	  <a href="#">STDOUT</a>
 	  <a href="#">STDERR</a>
 	  <a href="#">APPLOG</a>
-	</div>
-	<div class="iconnav">
-	  <img src="{{ bot.user.avatar_url_as(format="png", size=64) }}"></img>
-		{% for guild in bot.guilds %}
-			<a href="#" onclick="Profile({{ '"{0}"'.format(guild.id) }})""><img src="{{ guild.icon_url_as(format="png", size=64) }}"></a>
-		{% endfor %}
+	  <a href="#">MEMBERS</a>
 	</div>
 
-	<div class="main" id="main">
-	</div>
+	<div class="main" id="main"></div>
 </body>
 </html>
