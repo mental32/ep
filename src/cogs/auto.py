@@ -10,7 +10,7 @@ class Automation(GuildCog):
         if message.author.bot:
             return
 
-        elif message.content[:3] == 'PEP':
+        elif message.content[:3] in ('PEP', 'pep'):
             def _links():
                 for pep in message.content[3:].split():
                     if not pep.isdigit():
@@ -18,6 +18,9 @@ class Automation(GuildCog):
                     yield _PEP(int(pep))
 
             return await message.channel.send('\n'.join(_links()))
+
+        elif message.content[:3] in ('DIS', 'dis'):
+            return await self.bot.get_command('dis').callback(None, message.channel, source=message.content[3:].strip())
 
     async def on_member_join(self, member):
         if member.guild != self._guild:
