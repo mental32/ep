@@ -7,14 +7,14 @@ from discord.ext import commands
 
 
 _remaining_todo = {
-    'Complete': [],
+    'Complete': [
+        'PyDis'
+    ],
     'In progress': [
-        'Website'
+        'Python code sandbox'
     ],
     'Not implemented': [
         'PyDoc',
-        'PyProfile',
-        'Python code sandbox',
         'CPython bug/branch tracker',
         'Forward PSF tweets?',
     ],
@@ -59,6 +59,7 @@ class General:
             dis.dis(source)
 
         await ctx.send(f'```py\n{out.getvalue()}```')
+
 
 def setup(bot):
     bot.add_cog(General())
