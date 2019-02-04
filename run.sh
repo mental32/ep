@@ -2,4 +2,4 @@ if [ -d ".git/" ]; then
 	git pull
 fi
 
-python3 -B src/
+python3.6 -Bm src/
