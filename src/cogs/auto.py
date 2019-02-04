@@ -19,8 +19,8 @@ class Automation(GuildCog):
 
             return await message.channel.send('\n'.join(_links()))
 
-        elif message.content[:3] in ('DIS', 'dis'):
-            return await self.bot.get_command('dis').callback(None, message.channel, source=message.content[3:].strip())
+        elif message.content[:4] in ('DIS ', 'dis '):
+            return await self.bot.get_command('dis').callback(None, message.channel, source=message.content[4:].strip())
 
     async def on_member_join(self, member):
         if member.guild != self._guild:
