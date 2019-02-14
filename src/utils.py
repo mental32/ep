@@ -24,7 +24,6 @@ class GuildCog:
 
         self._guild = _guild = self.bot._guild
         self._general = _guild.get_channel(455072636075245590)
-        self._database = _guild.get_channel(489793386107240468)
 
         _roles = self._guild_roles
         self._member_role = _roles['Member']
