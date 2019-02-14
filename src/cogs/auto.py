@@ -30,7 +30,7 @@ class Automation(GuildCog):
             return await member.add_roles(self._bot_role)
 
         await member.add_roles(self._member_role)
-        await self._general.send(f'Welcome {member.mention}', delete_after=600.0)
+        await self._general.send(f'Welcome {member.mention}! Now at {len(self._guild.members)} members', delete_after=1200.0)
 
 def setup(bot):
     bot.add_cog(Automation(bot))
