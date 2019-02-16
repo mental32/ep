@@ -9,7 +9,7 @@ import src
 from .utils import SocketLogger
 
 SOCKET_INBOUND = 0
-SOCKET_OUTOUND = 1
+SOCKET_OUTBOUND = 1
 
 _LIB_PATH = pathlib.Path(src.__file__).parents[0]
 _LIB_EXTS = _LIB_PATH.joinpath('cogs')
@@ -95,8 +95,14 @@ class Bot(commands.Bot):
     async def on_cog_init(self, cog):
         print(f'Initalized: {repr(cog)}')
 
-    async def on_socket_raw_receive(self, msg):
+    async def on_socket_response(self, msg):
+        if type(msg) is bytes:
+            return
+
         self.__sock.write((SOCKET_INBOUND, msg))
 
     async def on_socket_raw_send(self, payload):
+        if type(payload) is bytes:
+            payload = repr(payload)
+
         self.__sock.write((SOCKET_OUTBOUND, payload))
