@@ -6,6 +6,10 @@ import pathlib
 from discord.ext import commands
 
 import src
+from .utils import SocketLogger
+
+SOCKET_INBOUND = 0
+SOCKET_OUTOUND = 1
 
 _LIB_PATH = pathlib.Path(src.__file__).parents[0]
 _LIB_EXTS = _LIB_PATH.joinpath('cogs')
@@ -26,6 +30,8 @@ class Bot(commands.Bot):
         kwargs['command_prefix'] = ('Py', 'py_')
 
         super().__init__(*args, **kwargs)
+
+        self.__sock = SocketLogger(self)
 
         if not os.path.exists('.data.json'):
             raise RuntimeError('fatal: ".data.json" is a file that must exist. (try using the --init argument)')
@@ -88,3 +94,9 @@ class Bot(commands.Bot):
 
     async def on_cog_init(self, cog):
         print(f'Initalized: {repr(cog)}')
+
+    async def on_socket_raw_receive(self, msg):
+        self.__sock.write((SOCKET_INBOUND, msg))
+
+    async def on_socket_raw_send(self, payload):
+        self.__sock.write((SOCKET_OUTBOUND, payload))

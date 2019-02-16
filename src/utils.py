@@ -30,3 +30,30 @@ class GuildCog:
         self._bot_role = _roles['Bot']
 
         self.bot.dispatch('cog_init', self)
+
+
+class SocketLogger:
+    def __init__(self, client):
+        self._buffer = []
+        self._client = client
+
+        client.loop.create_task(self._write_task())
+
+    def write(self, data):
+        self._buffer.append(data)
+
+    async def _write_task(self):
+        while True:
+            await asyncio.sleep(60)
+
+            if not self._buffer:
+                continue
+
+            with open('.socket.json', 'r') as inf:
+                body = json.loads(inf.read())
+
+            body += self._buffer
+            self._buffer = []
+
+            with open('.socket.json', 'w') as inf:
+                inf.write(json.dumps(body))
