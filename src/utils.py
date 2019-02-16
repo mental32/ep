@@ -9,7 +9,7 @@ class GuildCog:
             self.bot.loop.create_task(self.__cog_init())
 
     def __repr__(self):
-        return f'<Cog: {type(self)!r}>'
+        return f'<Cog => {{ {type(self).__name__} }}>'
 
     async def on_ready(self):
         await self.__cog_init()
