@@ -47,9 +47,7 @@ class Bot(commands.Bot):
 
             self.load_extension(f'src.cogs.{file[:_cut_off]}')
 
-    @staticmethod
-    def quickstart():
-        return Bot().run()
+        self.run()
 
     def load_extension(self, *args, **kwargs):
         super().load_extension(*args, **kwargs)

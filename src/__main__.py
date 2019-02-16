@@ -7,6 +7,6 @@ from src import Bot
 
 if __name__ == '__main__':
 	try:
-		Bot.quickstart()
+		Bot()
 	except RuntimeError as err:
 		sys.exit(err)
