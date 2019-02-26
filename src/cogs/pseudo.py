@@ -15,15 +15,15 @@ class Pseudo:
         if message.author.bot:
             return
 
-        elif len(message) >= 2 and message[0] == '`' and message[1] in string.ascii_letters:
+        elif len(message.content) >= 2 and message.content[0] == '`' and message.content[1] in string.ascii_letters:
             try:
-                output = await self._eval(message[1:])
+                output = await self._eval(None, message.content[1:])
             except BaseException as error:
                 output = str(error)
 
             await message.channel.send(f'```\n{output}```')
 
-    @commands.Command(name='eval')
+    @commands.command(name='eval')
     @commands.is_owner()
     async def pseudo_eval(self, ctx, *message):
         try:
@@ -31,7 +31,7 @@ class Pseudo:
         except BaseException as error:
             output = str(error)
 
-        await message.channel.send(f'```\n{output}```')
+        await ctx.send(f'```\n{output}```')
 
     def _parse(self, source):
         token = []
@@ -60,7 +60,7 @@ class Pseudo:
             'choice': lambda seq: random.choice(seq)
         }
 
-        tokens = self._parse(stmt)
+        tokens = self._parse(source)
 
         for token, type_ in tokens:
             if type_:
@@ -88,4 +88,7 @@ class Pseudo:
 
                 stack[-1] = value
 
-        return stack
+        return stacks
+
+def setup(bot):
+    bot.add_cog(Pseudo())
