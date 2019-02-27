@@ -267,6 +267,7 @@ class TokenTypes(enum.IntEnum):
 class Pseudo:
     def __init__(self, bot):
         self.bot = bot
+        self._users = {}
 
     async def on_message(self, message):
         if message.author.bot:
@@ -343,6 +344,9 @@ class Pseudo:
             'repr': repr,
         }
 
+        if ctx.author.id in self._users:
+            scope['_'] = self._users[ctx.author.id]
+
         tokens = self._parse(source)
 
         check = True # not (await ctx.bot.is_owner(ctx.author))
@@ -391,6 +395,8 @@ class Pseudo:
                 stack = stacks[-1]
 
                 stack[-1] = value
+
+        self._users[ctx.author.id] = stack[-1]
 
         return stack[-1]
 
