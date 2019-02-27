@@ -302,6 +302,7 @@ class Pseudo:
             '}': '{'
         }
 
+        # Check for unbalanced brackets before tokenizing
         for char in source:
             if char in brackets:
                 if brackets[char] != last_bracket[-1]:
@@ -312,21 +313,23 @@ class Pseudo:
             elif char in '([{':
                 last_bracket.append(char)
 
-            if char not in string.ascii_letters:
+        if last_bracket[-1] is not None:
+            raise SyntaxError(f'Unmatched bracket: "{last_bracket[-1]}"')
+
+        # Begin tokenizing and yielding
+        for char in source:
+            if char not in ascii_letters:
                 if token:
                     yield ''.join([*token]), TokenTypes.NAME
                     token = []
 
                 yield char, TokenTypes.OTHER
+
             else:
                 token += [char]
 
-        else:
-            if last_bracket[-1] is not None:
-                raise SyntaxError(f'Unmatched bracket: "{last_bracket[-1]}"')
-
-            elif token:
-                yield ''.join([*token]), TokenTypes.NAME
+        if token:
+            yield ''.join([*token]), TokenTypes.NAME
 
     async def _eval(self, ctx, source):
         stacks = [[]]
