@@ -335,6 +335,7 @@ class Pseudo:
         scope = {
             'ctx': ctx,
             'guild': ctx.guild,
+            'message': ctx.message,
             'author': ctx.author,
 
             'choice': lambda seq: random.choice(seq),
@@ -342,6 +343,7 @@ class Pseudo:
             'len': len,
             'str': str,
             'repr': repr,
+            'type': type,
         }
 
         if ctx.author.id in self._users:
