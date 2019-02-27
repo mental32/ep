@@ -349,14 +349,14 @@ class Pseudo:
         if ctx.author.id in self._users:
             scope['_'] = self._users[ctx.author.id]
 
-        tokens = self._parse(source)
+        check = True
 
-        check = True # not (await ctx.bot.is_owner(ctx.author))
+        tokens = self._parse(source)
 
         for token, type_ in tokens:
             if type_:
                 if token not in scope:
-                    raise LookupError(f'{token!r} is not in scope!')
+                    raise NameError(f'name {token!r} is not defined')
                 else:
                     stack.append(scope[token])
 
