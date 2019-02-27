@@ -273,7 +273,7 @@ class Pseudo:
         if message.author.bot:
             return
 
-        elif len(message.content) >= 2 and message.content[0] == '`' and message.content[1] in string.ascii_letters:
+        elif len(message.content) >= 2 and message.content.count('`') == 1 and message.content[0] == '`' and message.content[1] in ascii_letters:
             if message.channel.id != 534364800679936000:
                 return
 
