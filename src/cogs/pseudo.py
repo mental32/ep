@@ -280,17 +280,12 @@ class Pseudo:
             try:
                 output = await self._eval(Context(prefix='`', view=StringView(message.content), bot=self.bot, message=message), message.content[1:])
             except BaseException as error:
-                output = repr(error)
+                output = str(error)
 
-            await message.channel.send(f'```\n{output}```')
-
-    async def pseudo_eval(self, ctx, *message):
-        try:
-            output = await self._eval(ctx, message[1:])
-        except BaseException as error:
-            output = repr(error)
-
-        await ctx.send(f'```\n{output}```')
+            try:
+                await message.channel.send(f'```\n{output}```')
+            except discord.HTTPException as error:
+                await message.channel.send(f'```\n{error}```')
 
     def _parse(self, source):
         token = []
@@ -400,6 +395,9 @@ class Pseudo:
                 stack = stacks[-1]
 
                 stack[-1] = value
+
+            else:
+                raise SyntaxError(f'Unexpected token! {token!r} (type={type_!r})')
 
         self._users[ctx.author.id] = stack[-1]
 
