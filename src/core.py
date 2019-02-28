@@ -2,14 +2,11 @@ import os
 import sys
 import json
 import pathlib
+import asyncio
 
 from discord.ext import commands
 
 import src
-from .utils import SocketLogger
-
-SOCKET_INBOUND = 0
-SOCKET_OUTBOUND = 1
 
 _LIB_PATH = pathlib.Path(src.__file__).parents[0]
 _LIB_EXTS = _LIB_PATH.joinpath('cogs')
@@ -31,13 +28,13 @@ class Bot(commands.Bot):
 
         super().__init__(*args, **kwargs)
 
-        self.__sock = SocketLogger(self)
+        self.__socket_noloop = []
 
         if not os.path.exists('.data.json'):
             raise RuntimeError('fatal: ".data.json" is a file that must exist. (try using the --init argument)')
 
         with open('.data.json') as inf:
-            self._config = json.load(inf)
+            token = json.load(inf)['token']
 
         for file in os.listdir(f'{_LIB_EXTS}'):
             if '__pycache__' in file:
@@ -53,7 +50,7 @@ class Bot(commands.Bot):
 
             self.load_extension(f'src.cogs.{file[:_cut_off]}')
 
-        self.run()
+        self.run(token)
 
     def load_extension(self, *args, **kwargs):
         super().load_extension(*args, **kwargs)
@@ -79,9 +76,6 @@ class Bot(commands.Bot):
 
         return ctx
 
-    def run(self, *args, **kwargs):
-        return super().run(self._config['token'])
-
     async def on_connect(self):
         print('Connect...', end='')
 
@@ -99,10 +93,19 @@ class Bot(commands.Bot):
         if type(msg) is bytes:
             return
 
-        self.__sock.write((SOCKET_INBOUND, msg))
+        await asyncio.sleep(1)
 
-    async def on_socket_raw_send(self, payload):
-        if type(payload) is bytes:
-            payload = repr(payload)
+        if msg['t'] == 'MESSAGE_CREATE' and int(msg['d']['id']) in self.__socket_noloop:
+            return self.__socket_noloop.remove(int(msg['d']['id']))
 
-        self.__sock.write((SOCKET_OUTBOUND, payload))
+        j_msg = json.dumps(msg)
+
+        if len(j_msg) >= 2000:
+            return
+
+        try:
+            body = j_msg.replace("`", "\\`")
+            msg = await self.get_channel(455073632859848724).send(f'```json\n{body}```')
+            self.__socket_noloop.append(msg.id)
+        except Exception as error:
+            print(error)
