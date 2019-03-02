@@ -10,7 +10,7 @@ PYTHON_PATH = sys.executable
 DEPENDENCIES = [
     {
         'name': 'discord', 
-        'src': 'https://github.com/Rapptz/discord.py@rewrite#egg=discord.py[voice]',
+        'src': 'https://github.com/Rapptz/discord.py@3f06f24#egg=discord.py[voice]',
         'git': True,
         'check': lambda m: (m.__version__, m.__author__) == ('1.0.0a', 'Rapptz')
     },
