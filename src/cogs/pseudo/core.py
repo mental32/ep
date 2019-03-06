@@ -2,6 +2,7 @@ import inspect
 import random
 import string
 import enum
+from pprint import pformat
 
 import discord
 from discord.ext.commands import Context
@@ -11,6 +12,8 @@ from .attrs import allowed
 
 ascii_letters = string.ascii_letters + '_'
 
+pseudo_invoke = lambda content: len(content) >= 2 and content.count('`') == 1 and content[0] == '`' and content[1] in ascii_letters
+pretty_invoke = lambda content: len(content) >= 3 and content[:2] == '``' and content[2] in ascii_letters
 
 class TokenTypes(enum.IntEnum):
     OTHER = 0
@@ -26,19 +29,27 @@ class Pseudo:
         if message.author.bot:
             return
 
-        elif len(message.content) >= 2 and message.content.count('`') == 1 and message.content[0] == '`' and message.content[1] in ascii_letters:
-            if message.channel.id != 534364800679936000:
-                return
+        elif message.channel.id == 534364800679936000:
+            if pseudo_invoke(message.content):
+                await self._invoke(message)
 
-            try:
-                output = await self._eval(Context(prefix='`', view=StringView(message.content), bot=self.bot, message=message), message.content[1:])
-            except BaseException as error:
-                output = str(error)
+            elif pretty_invoke(message.content):
+                await self._invoke(message, pretty=True)
 
-            try:
-                await message.channel.send(f'```\n{output}```')
-            except discord.HTTPException as error:
-                await message.channel.send(f'```\n{error}```')
+    async def _invoke(self, message, pretty=False):
+        try:
+            output = await self._eval(Context(prefix='`', view=StringView(message.content), bot=self.bot, message=message), message.content[1 + pretty:])
+        except BaseException as error:
+            output = error
+
+        if pretty:
+            output = pformat(output)
+
+        try:
+            await message.channel.send(f'```\n{output}```')
+        except discord.HTTPException as error:
+            await message.channel.send(f'```\n{error}```')
+
 
     def _parse(self, source):
         token = []
