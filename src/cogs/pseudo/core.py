@@ -29,12 +29,11 @@ class Pseudo:
         if message.author.bot:
             return
 
-        elif message.channel.id == 534364800679936000:
-            if pseudo_invoke(message.content):
-                await self._invoke(message)
+        elif pseudo_invoke(message.content):
+            await self._invoke(message)
 
-            elif pretty_invoke(message.content):
-                await self._invoke(message, pretty=True)
+        elif pretty_invoke(message.content):
+            await self._invoke(message, pretty=True)
 
     async def _invoke(self, message, pretty=False):
         try:
