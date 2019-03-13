@@ -30,11 +30,10 @@ class Bot(commands.Bot):
 
         self.__socket_noloop = []
 
-        if not os.path.exists('.data.json'):
-            raise RuntimeError('fatal: ".data.json" is a file that must exist. (try using the --init argument)')
+        if 'DISCORD_TOKEN' not in os.environ:
+            raise RuntimeError('Could not find `DISCORD_TOKEN` in the environment!')
 
-        with open('.data.json') as inf:
-            token = json.load(inf)['token']
+        token = os.environ['DISCORD_TOKEN']
 
         for file in os.listdir(f'{_LIB_EXTS}'):
             if '__pycache__' in file:
