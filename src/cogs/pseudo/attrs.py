@@ -1,7 +1,7 @@
 import discord
 from discord.ext.commands import Context
 
-import src
+from ...core import Bot
 
 allowed = {
     discord.Guild: {
@@ -42,7 +42,7 @@ allowed = {
         'roles': None,
     },
 
-    src.Bot: {
+    Bot: {
         'guilds': None,
         'emojis': None,
         'is_ready': None,
