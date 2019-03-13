@@ -58,7 +58,7 @@ class Bot(commands.Bot):
 
     def add_cog(self, klass, *args, **kwargs):
         super().add_cog(klass, *args, **kwargs)
-        getattr(klass, f'_{type(klass).__name__}__cog_init', (lambda: None))()
+        getattr(klass, f'_{type(klass).__name__}__cog_add', (lambda: None))()
 
     def _do_cleanup(self, *args, **kwargs):
         super()._do_cleanup(*args, **kwargs)
