@@ -4,7 +4,7 @@ from discord.ext.commands import MemberConverter, BadArgument
 from ..utils import GuildCog
 
 DESCRIPTION = '''```ini
-[Member::{member}]
+[Member/{member}]
 ID = {member.id}
 
 {roles}```
