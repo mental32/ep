@@ -27,6 +27,9 @@ class Whois(GuildCog):
         elif message.content[:5] == 'whois':
             target, *_ = message.content[5:].strip().split(' ', maxsplit=1)
 
+            if not target:
+                return
+
             try:
                 member = await self.converter.convert(SlimContext(self, message), target)
             except BadArgument as error:
