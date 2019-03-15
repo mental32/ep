@@ -30,7 +30,7 @@ class Whois(GuildCog):
             try:
                 member = await self.converter.convert(SlimContext(self, message), target)
             except BadArgument as error:
-                await message.channel.send(f'```\n{error!r}```')
+                return await message.channel.send(f'```\n{error!r}```')
 
             description = DESCRIPTION.format(member=member, roles='\n'.join(f'role-{i} = {role!r}' for i, role in enumerate(member.roles)))
 
