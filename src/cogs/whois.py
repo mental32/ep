@@ -12,6 +12,8 @@ ID = {member.id}
 '''
 
 class SlimContext:
+    __slots__ = ('bot', 'guild', 'message')
+
     def __init__(self, bot, message):
         self.bot = bot
         self.guild = bot._guild
