@@ -35,7 +35,8 @@ class Whois(GuildCog):
             except BadArgument as error:
                 return await message.channel.send(f'```\n{error!r}```')
 
-            description = DESCRIPTION.format(member=member, roles='\n'.join(f'role-{i} = {role!r}' for i, role in enumerate(member.roles)))
+            _ = lambda role: f'<{role.name!r} {role.id}>'
+            description = DESCRIPTION.format(member=member, roles='\n'.join(f'role-{i} = {_(role)}' for i, role in enumerate(member.roles)))
 
             embed = Embed(description=description)
             embed.set_thumbnail(url=member.avatar_url)
