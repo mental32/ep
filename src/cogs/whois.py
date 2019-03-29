@@ -3,8 +3,9 @@ from discord.ext.commands import MemberConverter, BadArgument
 
 from ..utils import GuildCog
 
-DESCRIPTION = '''```ini
-[Member/{member}]
+DESCRIPTION = '''```toml
+[[Member]]
+username = {member}
 ID = {member.id}
 
 {roles}```
