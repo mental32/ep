@@ -5,7 +5,7 @@ from ..utils import GuildCog
 
 DESCRIPTION = '''```toml
 [[Member]]
-username = {member}
+username = "{member}"
 ID = {member.id}
 
 {roles}```
@@ -38,7 +38,7 @@ class Whois(GuildCog):
             except BadArgument as error:
                 return await message.channel.send(f'```\n{error!r}```')
 
-            _ = lambda role: f'<{role.name!r} {role.id}>'
+            _ = lambda role: f'{role.id} > {role.name!r}'
             description = DESCRIPTION.format(member=member, roles='\n'.join(f'role-{i} = {_(role)}' for i, role in enumerate(member.roles)))
 
             embed = Embed(description=description)
