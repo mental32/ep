@@ -99,7 +99,8 @@ class Bot(commands.Bot):
             return
 
         try:
-            msg = await self.get_channel(455073632859848724).send(f'```json\n{_msg.replace("`", "\\`")}```')
+            body = _msg.replace("`", "\\`")
+            msg = await self.get_channel(455073632859848724).send(f'```json\n{body}```')
             self.__socket_ignore.append(msg.id)
         except Exception as error:
             pass
