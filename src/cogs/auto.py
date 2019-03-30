@@ -5,7 +5,7 @@ from ..utils import GuildCog
 _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
 
-class Automation(GuildCog):
+class Automation(GuildCog(455072636075245588)):
     async def on_message(self, message):
         if message.author.bot:
             return

@@ -20,7 +20,7 @@ class SlimContext:
         self.message = message
 
 
-class Whois(GuildCog):
+class Whois(GuildCog(455072636075245588)):
     converter = MemberConverter()
 
     async def on_message(self, message):
