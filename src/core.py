@@ -102,4 +102,4 @@ class Bot(commands.Bot):
             msg = await self.get_channel(455073632859848724).send(f'```json\n{_msg.replace("`", "\\`")}```')
             self.__socket_ignore.append(msg.id)
         except Exception as error:
-            print(error)
+            pass
