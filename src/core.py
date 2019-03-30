@@ -59,10 +59,6 @@ class Bot(commands.Bot):
         super().add_cog(klass, *args, **kwargs)
         getattr(klass, f'_{type(klass).__name__}__cog_add', (lambda: None))()
 
-    def _do_cleanup(self, *args, **kwargs):
-        super()._do_cleanup(*args, **kwargs)
-        os.kill(os.getpid(), 3)
-
     async def get_context(self, *args, **kwargs):
         ctx = await super().get_context(*args, **kwargs)
 
