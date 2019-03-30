@@ -1,9 +1,6 @@
 import sys
 
-if '.' not in sys.path:
-    sys.path.append('.')
-
-from src import Bot
+from . import Bot
 
 if __name__ == '__main__':
     try:

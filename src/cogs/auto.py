@@ -1,6 +1,6 @@
 import asyncio
 
-from src.utils import GuildCog
+from ..utils import GuildCog
 
 _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
