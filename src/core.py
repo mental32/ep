@@ -28,7 +28,7 @@ class Bot(commands.Bot):
 
         super().__init__(*args, **kwargs)
 
-        self.__socket_noloop = []
+        self.__socket_ignore = []
 
         if 'DISCORD_TOKEN' not in os.environ:
             raise RuntimeError('Could not find `DISCORD_TOKEN` in the environment!')
@@ -94,17 +94,16 @@ class Bot(commands.Bot):
 
         await asyncio.sleep(1)
 
-        if msg['t'] == 'MESSAGE_CREATE' and int(msg['d']['id']) in self.__socket_noloop:
-            return self.__socket_noloop.remove(int(msg['d']['id']))
+        if msg['t'] == 'MESSAGE_CREATE' and int(msg['d']['id']) in self.__socket_ignore:
+            return self.__socket_ignore.remove(int(msg['d']['id']))
 
-        j_msg = json.dumps(msg)
+        _msg = json.dumps(msg)
 
-        if len(j_msg) >= 2000:
+        if len(_msg) >= 2000:
             return
 
         try:
-            body = j_msg.replace("`", "\\`")
-            msg = await self.get_channel(455073632859848724).send(f'```json\n{body}```')
-            self.__socket_noloop.append(msg.id)
+            msg = await self.get_channel(455073632859848724).send(f'```json\n{_msg.replace("`", "\\`")}```')
+            self.__socket_ignore.append(msg.id)
         except Exception as error:
             print(error)
