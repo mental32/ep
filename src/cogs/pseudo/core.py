@@ -113,7 +113,7 @@ class Pseudo:
         if ctx.author.id in self._users:
             scope['_'] = self._users[ctx.author.id]
 
-        check = True
+        check = ctx.author.id != 290565955153821696
 
         tokens = self._parse(source)
 
