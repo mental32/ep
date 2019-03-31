@@ -1,7 +1,8 @@
 import asyncio
+from typing import Optional
 
 
-def GuildCog(snowflake: int):
+def GuildCog(snowflake: Optional[int]):
     class GuildCog:
         def __init__(self, bot):
             self._enabled = False
@@ -28,18 +29,19 @@ def GuildCog(snowflake: int):
         def _enabled(self, value):
             self.__enabled = bool(value)
 
+        @property
+        def _guild(self):
+            return self.bot.get_guild(snowflake)
+
+        @property
+        def _general(self):
+            return self._guild.get_channel(455072636075245590)
+
         async def __cog_init(self):
-            while not hasattr(self.bot, '_guild'):
+            while not self.bot.is_ready():
                 await asyncio.sleep(0)
 
-            self.__enabled = True
-
-            self._guild = _guild = self.bot.get_guild(snowflake)
-            self._general = _guild.get_channel(455072636075245590)
-
-            _roles = self._guild_roles
-            self._member_role = _roles['Member']
-            self._bot_role = _roles['Bot']
+            self._enabled = True
 
             self.bot.dispatch('cog_init', self)
 

@@ -27,9 +27,9 @@ class Automation(GuildCog(455072636075245588)):
             return
 
         elif member.bot:
-            return await member.add_roles(self._bot_role)
+            return await member.add_roles(self._guild_roles['Bot'])
 
-        await member.add_roles(self._member_role)
+        await member.add_roles(self._guild_roles['Member'])
         await self._general.send(f'[{self._guild.member_count}] Welcome {member.mention}!', delete_after=1200.0)
 
 def setup(bot):

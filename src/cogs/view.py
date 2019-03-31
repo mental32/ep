@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 
 
-class General:
+class General(GuildCog(None)):
     @commands.command(name='source')
     async def _source(self, ctx):
         return await ctx.send('https://github.com/mental32/ep_bot')
