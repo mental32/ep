@@ -5,6 +5,8 @@ from contextlib import redirect_stdout
 import discord
 from discord.ext import commands
 
+from ..utils import GuildCog
+
 
 class General(GuildCog(None)):
     @commands.command(name='source')
@@ -29,4 +31,4 @@ class General(GuildCog(None)):
         await ctx.send(f'```py\n{out.getvalue()}```')
 
 def setup(bot):
-    bot.add_cog(General())
+    bot.add_cog(General(bot))
