@@ -10,6 +10,8 @@ from discord.ext.commands.view import StringView
 
 from .attrs import allowed
 
+__version__ = '0.1.0'
+
 ascii_letters = string.ascii_letters + '_'
 
 pseudo_invoke = lambda content: len(content) >= 2 and content.count('`') == 1 and content[0] == '`' and content[1] in ascii_letters
@@ -98,6 +100,7 @@ class Pseudo:
             'guild': ctx.guild,
             'message': ctx.message,
             'author': ctx.author,
+            'version': __version__,
 
             'choice': lambda seq: random.choice(seq),
 
