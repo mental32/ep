@@ -27,7 +27,7 @@ class Whois(GuildCog(455072636075245588)):
         if message.author.bot:
             return
 
-        elif message.content[:5] == 'whois':
+        if message.content[:6] == 'whois ':
             target, *_ = message.content[5:].strip().split(' ', maxsplit=1)
 
             if not target:
