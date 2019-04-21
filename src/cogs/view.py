@@ -14,7 +14,7 @@ _PEP_URL_ERR = 'Invalid PEP (%s)'
 class General(GuildCog(None)):
     @commands.command(name='source')
     async def _source(self, ctx):
-        return await ctx.send('https://github.com/mental32/ep_bot')
+        return await ctx.send('<https://github.com/mental32/ep_bot>')
 
     @commands.command(name='PEP')
     async def _pep(self, ctx, pep_number: int):
