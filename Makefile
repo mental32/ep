@@ -1,3 +1,11 @@
+#!/bin/bash
+
+python := python3
+pipenv := pipenv
 
 all:
-	python -m pip install --user -r requirements.txt
+	git pull
+	$(pipenv) install
+
+run:
+	@bash .run.sh
