@@ -1,5 +1,6 @@
 import asyncio
 import json
+import datetime
 
 from ..utils import GuildCog
 
@@ -7,6 +8,28 @@ _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
 
 class Automation(GuildCog(455072636075245588)):
+    __socket_ignore = []
+
+    @GuildCog.setup
+    async def setup(self):
+        self.__socket = self._guild.get_channel(455073632859848724)
+        self.bot.loop.create_task(self.statistics())
+
+    async def statistics(self):
+        member_statistic = self.bot.get_channel(567812974270742538)
+        local_time = self.bot.get_channel(567816759675977758)
+
+        member_count = 0
+
+        while True:
+            if member_count != self._guild.member_count:
+                member_count = self._guild.member_count
+                await member_statistic.edit(name=f'Total members: {member_count}')
+
+            t = datetime.datetime.now().strftime('%H:%M')
+            await local_time.edit(name=f'Server Time: {t}')
+            await asyncio.sleep(60)
+
     async def on_message(self, message):
         if message.author.bot:
             return
