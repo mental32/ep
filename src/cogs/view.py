@@ -2,10 +2,13 @@ import dis
 import io
 from contextlib import redirect_stdout
 
+import aiohttp
 import discord
 from discord.ext import commands
 
 from ..utils import GuildCog
+
+_PEP_URL_ERR = 'Invalid PEP (%s)'
 
 
 class General(GuildCog(None)):
@@ -15,7 +18,12 @@ class General(GuildCog(None)):
 
     @commands.command(name='PEP')
     async def _pep(self, ctx, pep_number: int):
-        return await ctx.send(f'https://www.python.org/dev/peps/pep-{str(pep_number).zfill(4)}/')
+        pep = str(pep_number).zfill(4)
+        url = f'https://www.python.org/dev/peps/pep-{pep}/'
+
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(url) as resp:
+                await ctx.send(f'<{url}>' if resp.status == 200 else _PEP_URL_ERR % pep)
 
     @commands.command(name='dis')
     async def _dis(self, ctx, *, source):
