@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 from ..utils import GuildCog
 
@@ -10,14 +11,12 @@ class Automation(GuildCog(455072636075245588)):
         if message.author.bot:
             return
 
-        elif message.content[:3] in ('PEP', 'pep'):
-            def _links():
-                for pep in message.content[3:].split():
-                    if not pep.isdigit():
-                        break
-                    yield _PEP(int(pep))
-
-            return await message.channel.send('\n'.join(_links()))
+        if message.content[:3] in ('PEP', 'pep'):
+            for pep in message.content[3:].split():
+                if not pep.isdigit():
+                    break
+                else:
+                    await self.bot.get_command('PEP').callback(None, message.channel, pep)
 
         elif message.content[:4] in ('DIS ', 'dis '):
             return await self.bot.get_command('dis').callback(None, message.channel, source=message.content[4:].strip())
@@ -31,6 +30,27 @@ class Automation(GuildCog(455072636075245588)):
 
         await member.add_roles(self._guild_roles['Member'])
         await self._general.send(f'[{self._guild.member_count}] Welcome {member.mention}!', delete_after=1200.0)
+
+    async def on_socket_response(self, msg):
+        if type(msg) is bytes:
+            return
+
+        await asyncio.sleep(1)
+
+        if msg['t'] == 'MESSAGE_CREATE' and int(msg['d']['id']) in self.__socket_ignore:
+            return self.__socket_ignore.remove(int(msg['d']['id']))
+
+        body = json.dumps(msg)
+
+        if len(body) >= 2000:
+            return
+
+        try:
+            msg = await self.__socket.send(codeblock(body, style='json'))
+        except Exception as error:
+            pass
+        else:
+            self.__socket_ignore.append(msg.id)
 
 def setup(bot):
     bot.add_cog(Automation(bot))
