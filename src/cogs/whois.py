@@ -1,15 +1,15 @@
 from discord import Embed
 from discord.ext.commands import MemberConverter, BadArgument
 
-from ..utils import GuildCog
+from ..utils import codeblock, GuildCog
 
-DESCRIPTION = '''```toml
+DESCRIPTION = codeblock('''
 [[Member]]
 username = "{member}"
 ID = {member.id}
 
-{roles}```
-'''
+{roles}
+''', style='toml')
 
 class SlimContext:
     __slots__ = ('bot', 'guild', 'message')
