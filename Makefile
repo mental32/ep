@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/make -f
 
 python := python3
 pipenv := pipenv
