@@ -105,6 +105,7 @@ class Pseudo(GuildCog(None)):
             'author': ctx.author,
             'version': __version__,
 
+            'codeblock': lambda obj: f'```\n{obj}```',
             'choice': lambda seq: random.choice(seq),
 
             'len': len,
@@ -147,6 +148,9 @@ class Pseudo(GuildCog(None)):
 
                         if inspect.iscoroutine(value):
                             value = await value    
+
+                        if isinstance(value, BaseException):
+                            raise value
 
                 stack[-1] = value
 
