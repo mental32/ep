@@ -76,9 +76,3 @@ class Bot(commands.Bot):
     async def on_ready(self):
         self._guild = self.get_guild(_GUILD_SNOWFLAKE)
         print('ready!')
-
-    async def on_ext_load(self, ext):
-        print(f'Loaded: {repr(ext)}')
-
-    async def on_cog_init(self, cog):
-        print(f'Initalized: {repr(cog)}')

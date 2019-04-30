@@ -5,9 +5,11 @@ import enum
 from pprint import pformat
 
 import discord
+from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ext.commands.view import StringView
 
+from ...utils import GuildCog
 from .attrs import allowed
 
 __version__ = '0.1.0'
@@ -22,11 +24,12 @@ class TokenTypes(enum.IntEnum):
     NAME = 1
 
 
-class Pseudo:
+class Pseudo(GuildCog(None)):
     def __init__(self, bot):
         self.bot = bot
         self._users = {}
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
             return

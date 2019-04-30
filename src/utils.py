@@ -6,6 +6,7 @@ from typing import Optional, Union, Type, Dict, Callable
 
 from discord import Role as _Role
 from discord.utils import maybe_coroutine as _run_possible_coroutine
+from discord.ext import commands
 
 __all__ = ('codeblock', 'GuildCogFactory', 'GuildCog')
 
@@ -32,8 +33,7 @@ class GuildCogFactory:
     products : Dict[str, GuildCogFactory.GuildCog]
         The products produced by this factory.
     """
-
-    class GuildCogBase:
+    class GuildCogBase(commands.Cog):
         """Base class for a GuildCog.
 
         Attributes
@@ -43,7 +43,7 @@ class GuildCogFactory:
         _enabled : bool
             A flag whether the current cog should be considered "enabled" or "present".
         """
-        def __init__(self, bot: 'discord.ext.commands.Bot'):
+        def __init__(self, bot: commands.Bot):
             self.__enabled = False
             self.bot = bot
 
@@ -53,6 +53,7 @@ class GuildCogFactory:
         def __repr__(self):
             return f'<Cog => {{ {type(self).__name__} }}>'
 
+        @commands.Cog.listener()
         async def on_ready(self):
             await self.__cog_init()
 
@@ -77,8 +78,7 @@ class GuildCogFactory:
             return self._guild.get_channel(455072636075245590)
 
         async def __cog_init(self):
-            while not self.bot.is_ready():
-                await asyncio.sleep(0)
+            await self.bot.wait_until_ready()
 
             for _, obj in _getmembers(self, (lambda obj: callable(obj) and hasattr(obj, '__guild_cog_tp__'))):
                 if MethTypes.Setup in obj.__guild_cog_tp__:

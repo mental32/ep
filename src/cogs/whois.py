@@ -1,4 +1,5 @@
 from discord import Embed
+from discord.ext import commands
 from discord.ext.commands import MemberConverter, BadArgument
 
 from ..utils import codeblock, GuildCog
@@ -23,6 +24,7 @@ class SlimContext:
 class Whois(GuildCog(455072636075245588)):
     converter = MemberConverter()
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
             return

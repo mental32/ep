@@ -2,7 +2,7 @@ import asyncio
 import json
 import datetime
 
-from ..utils import GuildCog
+from discord.ext import commands
 
 _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
@@ -30,6 +30,11 @@ class Automation(GuildCog(455072636075245588)):
             await local_time.edit(name=f'Server Time: {t}')
             await asyncio.sleep(60)
 
+    @commands.Cog.listener()
+    async def on_cog_init(self, cog):
+        print(f'Initalized: {repr(cog)}')
+
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
             return
@@ -44,6 +49,7 @@ class Automation(GuildCog(455072636075245588)):
         elif message.content[:4] in ('DIS ', 'dis '):
             return await self.bot.get_command('dis').callback(None, message.channel, source=message.content[4:].strip())
 
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         if member.guild != self._guild:
             return
@@ -54,6 +60,7 @@ class Automation(GuildCog(455072636075245588)):
         await member.add_roles(self._guild_roles['Member'])
         await self._general.send(f'[{self._guild.member_count}] Welcome {member.mention}!', delete_after=1200.0)
 
+    @commands.Cog.listener()
     async def on_socket_response(self, msg):
         if type(msg) is bytes:
             return
