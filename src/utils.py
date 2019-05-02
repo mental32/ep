@@ -123,11 +123,11 @@ class GuildCogFactory:
 @GuildCogFactory.wrap_staticmethods
 def GuildCog(snowflake: Union[str, Optional[int]]) -> Type[GuildCogFactory.GuildCogBase]:
     """Factory for GuildCogBase class instances, needed for guild specific GuildCogs."""
-    if isinstance(snowflake, str):
-        return GuildCogFactory.products[snowflake]
+    if snowflake is not None and not isinstance(snowflake, int):
+        raise TypeError(f'`snowflake` must be an int, got {type(snowflake)!r}')
 
-    elif snowflake is not None and not isinstance(snowflake, int):
-        raise TypeError(f'`snowflake` must either be a str or int, got {type(snowflake)!r}')
+    elif snowflake in GuildCogFactory.products:
+        return GuildCogFactory.products[snowflake]
 
     else:
         GuildCogBase = GuildCogFactory.GuildCogBase
