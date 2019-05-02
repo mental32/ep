@@ -1,18 +1,16 @@
 import os
 import sys
-import json
 import pathlib
-import asyncio
 from functools import partial
 
 from discord.ext import commands
-from discord.utils import maybe_coroutine
 
 import src
 
 _LIB_PATH = pathlib.Path(src.__file__).parents[0]
 _LIB_EXTS = _LIB_PATH.joinpath('cogs')
 _GUILD_SNOWFLAKE = 455072636075245588
+
 
 def snake_case(key):
     out = list(key.replace('__', '@'))
@@ -36,6 +34,8 @@ class Bot(commands.Bot):
         except KeyError:
             self.loop.run_until_complete(self.http.close())  # Close the underlying http session.
             raise RuntimeError('Could not find `DISCORD_TOKEN` in the environment!')
+
+        self.load_extension('jishaku')
 
         for file in os.listdir(f'{_LIB_EXTS}'):
             if '__pycache__' in file:
