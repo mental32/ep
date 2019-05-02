@@ -23,7 +23,7 @@ class General(GuildCog(None)):
 
         async with aiohttp.ClientSession() as cs:
             async with cs.get(url) as resp:
-                await ctx.send(f'<{url}>' if resp.status == 200 else _PEP_URL_ERR % pep)
+                await ctx.send(f'{url}' if resp.status == 200 else _PEP_URL_ERR % pep)
 
     @commands.command(name='dis')
     async def _dis(self, ctx, *, source):
