@@ -4,6 +4,8 @@ import datetime
 
 from discord.ext import commands
 
+from ..utils import GuildCog, codeblock
+
 _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
 
@@ -65,6 +67,9 @@ class Automation(GuildCog(455072636075245588)):
         if type(msg) is bytes:
             return
 
+        elif not self.bot.is_ready():
+            return
+
         await asyncio.sleep(1)
 
         if msg['t'] == 'MESSAGE_CREATE' and int(msg['d']['id']) in self.__socket_ignore:
@@ -77,7 +82,7 @@ class Automation(GuildCog(455072636075245588)):
 
         try:
             msg = await self.__socket.send(codeblock(body, style='json'))
-        except Exception as error:
+        except Exception:
             pass
         else:
             self.__socket_ignore.append(msg.id)
