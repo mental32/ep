@@ -2,7 +2,7 @@ import asyncio
 import json
 import datetime
 
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from ..utils import GuildCog, codeblock
 
@@ -25,22 +25,22 @@ class Automation(GuildCog(455072636075245588)):
     @GuildCog.setup
     async def setup(self):
         self.__socket = self._guild.get_channel(455073632859848724)
-        self.bot.loop.create_task(self.statistics())
 
-    async def statistics(self):
-        member_statistic = self.bot.get_channel(567812974270742538)
-        local_time = self.bot.get_channel(567816759675977758)
+        self.__cached_member_count = self._guild.member_count
 
-        member_count = 0
+        self.__member_stat_channel = self.bot.get_channel(567812974270742538)
+        self.__time_stat_channel = self.bot.get_channel(567816759675977758)
 
-        while True:
-            if member_count != self._guild.member_count:
-                member_count = self._guild.member_count
-                await member_statistic.edit(name=f'Total members: {member_count}')
+        self.statistic_task.start()
 
-            t = datetime.datetime.now().strftime('%H:%M')
-            await local_time.edit(name=f'Server Time: {t}')
-            await asyncio.sleep(60)
+    @tasks.loop(seconds=60, reconnect=True)
+    async def statistic_task(self):
+        if self._guild.member_count != self.__cached_member_count:
+            self.__cached_member_count = self._guild.member_count
+            await member_statistic.edit(name=f'Total members: {member_count}')
+
+        t = datetime.datetime.now().strftime('%H:%M')
+        await local_time.edit(name=f'Server Time: {t}')
 
     async def bump_unlock(self, target, *, timeout):
         """Unlock the bump channel by giving Members send_messages permission after a timeout."""
@@ -56,7 +56,7 @@ class Automation(GuildCog(455072636075245588)):
         if message.author.bot:
             return
 
-        if message.channel.id == BUMP_CHANNEL_ID:
+        elif message.channel.id == BUMP_CHANNEL_ID:
             content = message.content
 
             if ' ' in content and content.endswith('bump') and any(content.startswith(prefix) for prefix in DISBOARD_BOT_PREFIX):
@@ -76,16 +76,6 @@ class Automation(GuildCog(455072636075245588)):
                     await response.delete()
 
             await message.delete()
-
-        elif message.content[:3] in ('PEP', 'pep'):
-            for pep in message.content[3:].split():
-                if not pep.isdigit():
-                    break
-                else:
-                    await self.bot.get_command('PEP').callback(None, message.channel, pep)
-
-        elif message.content[:4] in ('DIS ', 'dis '):
-            return await self.bot.get_command('dis').callback(None, message.channel, source=message.content[4:].strip())
 
     @commands.Cog.listener()
     async def on_member_join(self, member):

@@ -6,37 +6,40 @@ import aiohttp
 import discord
 from discord.ext import commands
 
-from ..utils import GuildCog
+from ..utils import GuildCog, codeblock
 
 _PEP_URL_ERR = 'Invalid PEP (%s)'
 
 
 class General(GuildCog(None)):
     @commands.command(name='source')
-    async def _source(self, ctx):
+    async def _source_command(self, ctx):
         return await ctx.send('<https://github.com/mental32/ep_bot>')
 
     @commands.command(name='PEP')
-    async def _pep(self, ctx, pep_number: int):
+    async def _pep_command(self, ctx, pep_number: int):
         pep = str(pep_number).zfill(4)
         url = f'https://www.python.org/dev/peps/pep-{pep}/'
 
         async with aiohttp.ClientSession() as cs:
             async with cs.get(url) as resp:
-                await ctx.send(f'{url}' if resp.status == 200 else _PEP_URL_ERR % pep)
+                await ctx.send(f'{url}' if resp.status == 200 else _PEP_URL_ERR % pep_number)
 
     @commands.command(name='dis')
-    async def _dis(self, ctx, *, source):
+    async def _dis_command(self, ctx, *, source):
         if source.startswith('```py\n'):
             source = source[6:]
 
         source = source.strip('`')
         out = io.StringIO()
 
-        with redirect_stdout(out):
-            dis.dis(source)
+        try:
+            with redirect_stdout(out):
+                dis.dis(source)
+        except Exception as err:
+            out.write(f'{err!r}')
 
-        await ctx.send(f'```py\n{out.getvalue()}```')
+        await ctx.send(codeblock(out.getvalue(), style='py'))
 
 def setup(bot):
     bot.add_cog(General(bot))
