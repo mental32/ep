@@ -8,6 +8,16 @@ from ..utils import GuildCog, codeblock
 
 _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
+DISBOARD_BOT_PREFIX = ('!d', '!disboard')
+
+DISBOARD_BOT_ID = 302050872383242240
+BUMP_CHANNEL_ID = 575696848405397544
+
+_TWO_HOURS = 3600 * 2
+
+def _disboard_bot_check(message):
+    return message.channel.id == BUMP_CHANNEL_ID and message.author.id == DISBOARD_BOT_ID
+
 
 class Automation(GuildCog(455072636075245588)):
     __socket_ignore = []
@@ -32,6 +42,11 @@ class Automation(GuildCog(455072636075245588)):
             await local_time.edit(name=f'Server Time: {t}')
             await asyncio.sleep(60)
 
+    async def bump_unlock(self, target, *, timeout):
+        """Unlock the bump channel by giving Members send_messages permission after a timeout."""
+        await asyncio.sleep(timeout)
+        await channel.set_permissions(member_role, send_messages=True)
+
     @commands.Cog.listener()
     async def on_cog_init(self, cog):
         print(f'Initalized: {repr(cog)}')
@@ -41,7 +56,26 @@ class Automation(GuildCog(455072636075245588)):
         if message.author.bot:
             return
 
-        if message.content[:3] in ('PEP', 'pep'):
+        if mesasge.channel.id == BUMP_CHANNEL_ID:
+            content = message.content
+
+            if any(content.startswith(prefix) for prefix in DISBOARD_BOT_PREFIX):
+
+                try:
+                    response = await self.bot.wait_for('message', check=_disboard_bot_check)
+                except Exception as err:
+                    await response.delete()
+
+                if response.embeds and 'bump done' in response.embeds[0].description.lower():
+                    member_role = self._guild_roles['Member']
+
+                    await channel.set_permissions(member_role, send_messages=False)
+
+                    return self.bot.loop.create_task(self.bump_unlock(member_role, timeout=_TWO_HOURS))
+
+            await message.delete()
+
+        elif message.content[:3] in ('PEP', 'pep'):
             for pep in message.content[3:].split():
                 if not pep.isdigit():
                     break
