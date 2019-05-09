@@ -1,5 +1,7 @@
 import asyncio
 import random
+import traceback
+import functools
 from enum import IntEnum
 from inspect import getmembers as _getmembers
 from typing import Optional, Union, Type, Dict, Callable
@@ -142,10 +144,15 @@ class GuildCogFactory:
             predicate = predicate or (lambda _: True)
 
         def _passive_command_wrapper(func):
+
             @commands.Cog.listener('on_message')
-            async def on_message(message):
-                if not message.bot and predicate(message):
-                    return await func(*args, **kwargs)
+            @functools.wraps(func)
+            async def wrapper(message):
+                try:
+                    if not message.bot and predicate(message):
+                        return await func(*args, **kwargs)
+                except Exception as err:
+                    traceback.print_exc()
 
         return _passive_command_wrapper
 
