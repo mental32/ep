@@ -38,7 +38,7 @@ class Bot(commands.Bot):
                 name, *_ = path.name.rpartition('.')
 
             try:
-                self.load_extension(f'.cogs.{name}', package=__name__)
+                self.load_extension(f'src.cogs.{name}')
             except Exception as err:
                 print(f'Failed to load "{path.name}" ({err})', file=sys.stderr)
 
