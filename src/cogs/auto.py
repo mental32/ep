@@ -72,6 +72,8 @@ class Automation(GuildCog(455072636075245588)):
                     await channel.set_permissions(member_role, send_messages=False)
 
                     return self.bot.loop.create_task(self.bump_unlock(member_role, timeout=_TWO_HOURS))
+                else:
+                    await response.delete()
 
             await message.delete()
 
