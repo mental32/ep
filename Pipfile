@@ -6,7 +6,7 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-"discord.py" = {editable = true,extras = ["voice"],git = "https://github.com/Rapptz/discord.py"}
+"discord.py" = {git = "https://github.com/Rapptz/discord.py"}
 click = "*"
 jishaku = "*"
 
