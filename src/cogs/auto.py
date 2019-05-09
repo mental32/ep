@@ -59,7 +59,7 @@ class Automation(GuildCog(455072636075245588)):
         if message.channel.id == BUMP_CHANNEL_ID:
             content = message.content
 
-            if any(content.startswith(prefix) for prefix in DISBOARD_BOT_PREFIX):
+            if ' ' in content and content.endswith('bump') and any(content.startswith(prefix) for prefix in DISBOARD_BOT_PREFIX):
 
                 try:
                     response = await self.bot.wait_for('message', check=_disboard_bot_check)
