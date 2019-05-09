@@ -147,12 +147,14 @@ class GuildCogFactory:
 
             @commands.Cog.listener('on_message')
             @functools.wraps(func)
-            async def wrapper(message):
+            async def wrapper(self, message):
                 try:
-                    if not message.bot and predicate(message):
-                        return await func(*args, **kwargs)
+                    if not message.author.bot and predicate(message):
+                        return await func(self, message)
                 except Exception as err:
                     traceback.print_exc()
+
+            return wrapper
 
         return _passive_command_wrapper
 
