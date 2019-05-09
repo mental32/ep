@@ -93,11 +93,16 @@ class GuildCogFactory:
 
     products: Dict[str, GuildCogBase] = {}
 
+    # Staticmethods
+    # Wraps another object with the staticmethods of this factory.
+
     @staticmethod
     def wrap_staticmethods(obj):
-        setattr(obj, 'setup', GuildCogFactory.setup)
-        setattr(obj, 'check', GuildCogFactory.check)
+        for attr in ('setup', 'check', 'passive_command'):
+            setattr(obj, attr, getattr(GuildCogFactory, attr))
         return obj
+
+    # Used as decorators to methods on Cogs
 
     @staticmethod
     def setup(func: Callable) -> Callable:
@@ -118,6 +123,32 @@ class GuildCogFactory:
                     return _run_possible_coroutine(func)
             return decorated
         return inner
+
+    @staticmethod
+    def passive_command(*, predicate=None, prefix=None):
+        if predicate is not None and prefix is not None:
+            raise TypeError('Only predicate or prefix must be supplied not both.')
+
+        if prefix is not None:
+            if isinstance(prefix, tuple):
+                predicate = lambda message: any(message.content.startswith(substr) for substr in prefix)
+
+            elif isinstance(prefix, str):
+                predicate = lambda message: message.content[:len(prefix)] == prefix                
+
+            else:
+                raise TypeError
+        else:
+            predicate = predicate or (lambda _: True)
+
+        def _passive_command_wrapper(func):
+            @discord.Cog.listener('on_message')
+            async def on_message(message):
+                if not message.bot and predicate(message):
+                    return await func(*args, **kwargs)
+
+        return _passive_command_wrapper
+
 
 
 @GuildCogFactory.wrap_staticmethods
