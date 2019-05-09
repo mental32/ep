@@ -56,7 +56,7 @@ class Automation(GuildCog(455072636075245588)):
         if message.author.bot:
             return
 
-        if mesasge.channel.id == BUMP_CHANNEL_ID:
+        if message.channel.id == BUMP_CHANNEL_ID:
             content = message.content
 
             if any(content.startswith(prefix) for prefix in DISBOARD_BOT_PREFIX):
