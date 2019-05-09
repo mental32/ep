@@ -60,4 +60,4 @@ class PassiveCommands(GuildCog(455072636075245588)):
         await self.bot.get_command('dis').callback(None, message.channel, source=message.content[4:].strip())
 
 def setup(bot):
-    bot.add_cog(Whois(bot))
+    bot.add_cog(PassiveCommands(bot))
