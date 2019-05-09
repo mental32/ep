@@ -1,6 +1,7 @@
 import os
 import sys
 import pathlib
+import traceback
 from functools import partial
 
 from discord.ext import commands
@@ -40,7 +41,7 @@ class Bot(commands.Bot):
             try:
                 self.load_extension(f'src.cogs.{name}')
             except Exception as err:
-                print(f'Failed to load "{path.name}" ({err})', file=sys.stderr)
+                traceback.print_exc()
 
     def add_cog(self, klass, *args, **kwargs):
         super().add_cog(klass, *args, **kwargs)
