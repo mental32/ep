@@ -142,7 +142,7 @@ class GuildCogFactory:
             predicate = predicate or (lambda _: True)
 
         def _passive_command_wrapper(func):
-            @discord.Cog.listener('on_message')
+            @commands.Cog.listener('on_message')
             async def on_message(message):
                 if not message.bot and predicate(message):
                     return await func(*args, **kwargs)
