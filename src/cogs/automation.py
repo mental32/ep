@@ -41,7 +41,7 @@ class Automation(GuildCog(455072636075245588)):
             await member_statistic.edit(name=f'Total members: {member_count}')
 
         t = datetime.datetime.now().strftime('%H:%M')
-        await local_time.edit(name=f'Server Time: {t}')
+        await self.__time_stat_channel.edit(name=f'Server Time: {t}')
 
     async def bump_unlock(self, target, *, timeout):
         """Unlock the bump channel by giving Members send_messages permission after a timeout."""
