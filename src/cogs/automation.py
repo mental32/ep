@@ -28,6 +28,7 @@ class Automation(GuildCog(455072636075245588)):
 
         self.__cached_member_count = self._guild.member_count
 
+        self.__bump_channel = self.bot.get_channel(BUMP_CHANNEL_ID)
         self.__member_stat_channel = self.bot.get_channel(567812974270742538)
         self.__time_stat_channel = self.bot.get_channel(567816759675977758)
 
@@ -45,7 +46,7 @@ class Automation(GuildCog(455072636075245588)):
     async def bump_unlock(self, target, *, timeout):
         """Unlock the bump channel by giving Members send_messages permission after a timeout."""
         await asyncio.sleep(timeout)
-        await channel.set_permissions(member_role, send_messages=True)
+        await self.__bump_channel.set_permissions(member_role, send_messages=True)
 
     @commands.Cog.listener()
     async def on_cog_init(self, cog):
@@ -69,7 +70,7 @@ class Automation(GuildCog(455072636075245588)):
                 if response.embeds and 'bump done' in response.embeds[0].description.lower():
                     member_role = self._guild_roles['Member']
 
-                    await channel.set_permissions(member_role, send_messages=False)
+                    await self.__bump_channel.set_permissions(member_role, send_messages=False)
 
                     return self.bot.loop.create_task(self.bump_unlock(member_role, timeout=_TWO_HOURS))
                 else:
