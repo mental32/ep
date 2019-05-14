@@ -38,7 +38,7 @@ class Automation(GuildCog(455072636075245588)):
     async def statistic_task(self):
         if self._guild.member_count != self.__cached_member_count:
             self.__cached_member_count = self._guild.member_count
-            await member_statistic.edit(name=f'Total members: {member_count}')
+            await self.__member_stat_channel.edit(name=f'Total members: {member_count}')
 
         t = datetime.datetime.now().strftime('%H:%M')
         await self.__time_stat_channel.edit(name=f'Server Time: {t}')
