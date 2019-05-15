@@ -34,12 +34,14 @@ class Automation(GuildCog(455072636075245588)):
 
         self.statistic_task.start()
 
+        member_role = self._guild_roles['Member']
+
         async for message in bump.history(limit=1):
             delta = (datetime.datetime.now() - message.created_at).total_seconds()
             locked = delta < _TWO_HOURS
 
             if locked:
-                self.bot.loop.create_task(self.bump_unlock(self._guild_roles['Member'], timeout=_TWO_HOURS - delta))
+                self.bot.loop.create_task(self.bump_unlock(member_role, timeout=_TWO_HOURS - delta))
 
         await self.__bump_channel.set_permissions(member_role, send_messages=locked, read_messages=True)
 
