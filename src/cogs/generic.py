@@ -3,7 +3,6 @@ import io
 from contextlib import redirect_stdout
 
 import aiohttp
-import discord
 from discord.ext import commands
 
 from ..utils import GuildCog, codeblock
@@ -40,6 +39,7 @@ class General(GuildCog(None)):
             out.write(f'{err!r}')
 
         await ctx.send(codeblock(out.getvalue(), style='py'))
+
 
 def setup(bot):
     bot.add_cog(General(bot))

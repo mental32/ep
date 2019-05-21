@@ -1,10 +1,8 @@
-import asyncio
-import random
 import traceback
 import functools
 from enum import IntEnum
 from inspect import getmembers as _getmembers
-from typing import Optional, Union, Type, Dict, Callable
+from typing import Optional, Type, Dict, Callable
 
 from discord import Role as _Role
 from discord.utils import maybe_coroutine as _run_possible_coroutine
@@ -124,7 +122,7 @@ class GuildCogFactory:
                 if _run_possible_coroutine(pred(*args, **kwargs)):
                     return _run_possible_coroutine(func)
             return decorated
-        return inner
+        return decorator
 
     @staticmethod
     def passive_command(*, predicate=None, prefix=None):
@@ -136,7 +134,7 @@ class GuildCogFactory:
                 predicate = lambda message: any(message.content.startswith(substr) for substr in prefix)
 
             elif isinstance(prefix, str):
-                predicate = lambda message: message.content[:len(prefix)] == prefix                
+                predicate = lambda message: message.content[:len(prefix)] == prefix
 
             else:
                 raise TypeError
@@ -151,13 +149,12 @@ class GuildCogFactory:
                 try:
                     if not message.author.bot and predicate(message):
                         return await func(self, message)
-                except Exception as err:
+                except Exception:
                     traceback.print_exc()
 
             return wrapper
 
         return _passive_command_wrapper
-
 
 
 @GuildCogFactory.wrap_staticmethods

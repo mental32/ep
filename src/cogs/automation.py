@@ -13,7 +13,7 @@ DISBOARD_BOT_PREFIX = ('!d', '!disboard')
 DISBOARD_BOT_ID = 302050872383242240
 BUMP_CHANNEL_ID = 575696848405397544
 
-_TWO_HOURS = 3600 * 2
+_TWO_HOURS = (3600 * 2)
 
 def _disboard_bot_check(message):
     return message.channel.id == BUMP_CHANNEL_ID and message.author.id == DISBOARD_BOT_ID
@@ -48,7 +48,7 @@ class Automation(GuildCog(455072636075245588)):
     @tasks.loop(seconds=60, reconnect=True)
     async def statistic_task(self):
         if self._guild.member_count != self.__cached_member_count:
-            self.__cached_member_count = self._guild.member_count
+            self.__cached_member_count = member_count = self._guild.member_count
             await self.__member_stat_channel.edit(name=f'Total members: {member_count}')
 
         t = datetime.datetime.now().strftime('%H:%M')

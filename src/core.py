@@ -1,5 +1,4 @@
 import os
-import sys
 import pathlib
 import traceback
 from functools import partial
@@ -27,7 +26,6 @@ class Bot(commands.Bot):
         self.load_extension('jishaku')
 
         for path in _LIB_EXTS.iterdir():
- 
             if path.is_dir():
                 name = path.name
 
@@ -40,7 +38,7 @@ class Bot(commands.Bot):
 
             try:
                 self.load_extension(f'src.cogs.{name}')
-            except Exception as err:
+            except Exception:
                 traceback.print_exc()
 
     def add_cog(self, klass, *args, **kwargs):

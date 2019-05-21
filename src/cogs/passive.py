@@ -1,7 +1,6 @@
 import shlex
 
 from discord import Embed
-from discord.ext import commands
 from discord.ext.commands import MemberConverter, BadArgument
 
 from ..utils import codeblock, GuildCog
@@ -13,6 +12,7 @@ ID = {member.id}
 
 {roles}
 ''', style='toml')
+
 
 class SlimContext:
     __slots__ = ('bot', 'guild', 'message')
@@ -38,7 +38,7 @@ class PassiveCommands(GuildCog(455072636075245588)):
         except BadArgument as error:
             return await message.channel.send(codeblock(repr(error)))
 
-        fmt = lambda role: f'{role.id} > {role.name!r}'
+        fmt = lambda role: f'{role.id} > {role.name!r}'  # noqa: E731
         description = DESCRIPTION.format(member=member, roles='\n'.join(f'role-{i} = {fmt(role)}' for i, role in enumerate(member.roles)))
 
         embed = Embed(description=description)
@@ -58,6 +58,7 @@ class PassiveCommands(GuildCog(455072636075245588)):
     @GuildCog.passive_command(prefix=('DIS', 'dis'))
     async def _dis_command(self, message):
         await self.bot.get_command('dis').callback(None, message.channel, source=message.content[4:].strip())
+
 
 def setup(bot):
     bot.add_cog(PassiveCommands(bot))

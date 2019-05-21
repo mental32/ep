@@ -3,6 +3,7 @@ import random
 import string
 import enum
 from pprint import pformat
+from functools import partial
 
 import discord
 from discord.ext import commands
@@ -16,8 +17,15 @@ __version__ = '0.1.0'
 
 ascii_letters = string.ascii_letters + '_'
 
-pseudo_invoke = lambda content: len(content) >= 2 and content.count('`') == 1 and content[0] == '`' and content[1] in ascii_letters
-pretty_invoke = lambda content: len(content) >= 3 and content[:2] == '``' and content[2] in ascii_letters
+pseudo_invoke = lambda content: len(content) >= 2 \
+                and content.count('`') == 1 \
+                and content[0] == '`' \
+                and content[1] in ascii_letters
+
+pretty_invoke = lambda content: len(content) >= 3 \
+                and content[:2] == '``' \
+                and content[2] in ascii_letters
+
 
 class TokenTypes(enum.IntEnum):
     OTHER = 0
@@ -53,7 +61,6 @@ class Pseudo(GuildCog(None)):
             await message.channel.send(f'```\n{output}```')
         except discord.HTTPException as error:
             await message.channel.send(f'```\n{error}```')
-
 
     def _parse(self, source):
         token = []
@@ -147,7 +154,7 @@ class Pseudo(GuildCog(None)):
                         value = func(ctx, value)
 
                         if inspect.iscoroutine(value):
-                            value = await value    
+                            value = await value
 
                         if isinstance(value, BaseException):
                             raise value
