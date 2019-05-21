@@ -55,7 +55,7 @@ class PassiveCommands(GuildCog(455072636075245588)):
             else:
                 break
 
-    @GuildCog.passive_command(prefix=('DIS', 'dis'))
+    @GuildCog.passive_command(prefix=('dis '))
     async def _dis_command(self, message):
         await self.bot.get_command('dis').callback(None, message.channel, source=message.content[4:].strip())
 
