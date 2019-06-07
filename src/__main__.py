@@ -1,17 +1,9 @@
 import sys
 
-import click
-
 from .core import Bot
 
-@click.command()
-@click.option('--watch', default=False)
-def main(watch):
+if __name__ == '__main__':
     try:
-        bot = Bot()
-        bot.run()
+        Bot().run()
     except RuntimeError as err:
         sys.exit(err)
-
-if __name__ == '__main__':
-    main()
