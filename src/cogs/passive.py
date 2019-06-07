@@ -39,7 +39,7 @@ class PassiveCommands(GuildCog(455072636075245588)):
             return await message.channel.send(codeblock(repr(error)))
 
         fmt = lambda role: f'{role.id} > {role.name!r}'  # noqa: E731
-        description = DESCRIPTION.format(member=member, roles='\n'.join(f'role-{i} = {fmt(role)}' for i, role in enumerate(member.roles)))
+        description = DESCRIPTION.format(member=member, roles='\n'.join(f'[[role]]\nid = "{fmt(role)}"' for i, role in enumerate(member.roles)))
 
         embed = Embed(description=description)
         embed.set_thumbnail(url=member.avatar_url)
