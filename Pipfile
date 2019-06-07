@@ -7,7 +7,6 @@ verify_ssl = true
 
 [packages]
 "discord.py" = {git = "https://github.com/Rapptz/discord.py"}
-click = "*"
 jishaku = "*"
 
 [requires]
