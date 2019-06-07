@@ -10,6 +10,7 @@ from discord.ext import commands
 
 __all__ = ('codeblock', 'GuildCogFactory', 'GuildCog')
 
+event = commands.Cog.listener()
 
 def codeblock(string: str, style: str = '') -> str:
     """Format a string into a code block, escapes any other backticks"""

@@ -1,10 +1,11 @@
 import asyncio
 import json
 import datetime
+import traceback
 
-from discord.ext import commands, tasks
+from discord.ext import tasks
 
-from ..utils import GuildCog, codeblock
+from ..utils import GuildCog, codeblock, event
 
 _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
@@ -59,11 +60,11 @@ class Automation(GuildCog(455072636075245588)):
         await asyncio.sleep(timeout)
         await self.__bump_channel.set_permissions(target, send_messages=True, read_messages=True)
 
-    @commands.Cog.listener()
+    @event
     async def on_cog_init(self, cog):
         print(f'Initalized: {repr(cog)}')
 
-    @commands.Cog.listener()
+    @event
     async def on_message(self, message):
         if message.author.bot:
             return
@@ -75,7 +76,8 @@ class Automation(GuildCog(455072636075245588)):
 
                 try:
                     response = await self.bot.wait_for('message', check=_disboard_bot_check)
-                except Exception as err:
+                except Exception:
+                    traceback.print_exc()
                     await response.delete()
 
                 if response.embeds and 'bump done' in response.embeds[0].description.lower():
@@ -89,7 +91,7 @@ class Automation(GuildCog(455072636075245588)):
 
             await message.delete()
 
-    @commands.Cog.listener()
+    @event
     async def on_member_join(self, member):
         if member.guild != self._guild:
             return
@@ -100,7 +102,7 @@ class Automation(GuildCog(455072636075245588)):
         await member.add_roles(self._guild_roles['Member'])
         await self._general.send(f'[{self._guild.member_count}] Welcome {member.mention}!', delete_after=1200.0)
 
-    @commands.Cog.listener()
+    @event
     async def on_socket_response(self, msg):
         if type(msg) is bytes:
             return
