@@ -6,7 +6,9 @@ A discord bot for the [Efficient Python discord](https://discord.gg/kadYAst)
 
 > It is suggested that you have pipenv installed prior to running anything
 
-You must first export the discord token to be used.
+Install and update dependencies with `pipenv install`.
+
+Then export the discord token to be used.
 
 ```bash
 export DISCORD_TOKEN="token"
