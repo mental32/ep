@@ -13,7 +13,7 @@ _GUILD_SNOWFLAKE = 455072636075245588
 
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
-        kwargs['command_prefix'] = '?'
+        kwargs['command_prefix'] = ('py_', 'py', 'py?', '?', '>>')
 
         super().__init__(*args, **kwargs)
 
