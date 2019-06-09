@@ -8,14 +8,8 @@ from discord import Role as _Role
 from discord.utils import maybe_coroutine as _run_possible_coroutine
 from discord.ext import commands
 
+
 __all__ = ('codeblock', 'GuildCogFactory', 'GuildCog')
-
-event = commands.Cog.listener()
-
-def codeblock(string: str, style: str = '') -> str:
-    """Format a string into a code block, escapes any other backticks"""
-    zwsp = "``\u200b"
-    return f'```{style}\n{string.replace("``", zwsp)}```\n'
 
 
 class MethTypes(IntEnum):

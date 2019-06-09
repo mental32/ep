@@ -3,11 +3,8 @@
 python := python3
 pipenv := pipenv
 
-.PHONY: all run
+.PHONY: install
 
-all:
+install:
 	git pull
 	$(pipenv) install
-
-run:
-	@bash .run.sh

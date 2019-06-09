@@ -73,7 +73,6 @@ class Automation(GuildCog(455072636075245588)):
             content = message.content
 
             if ' ' in content and content.endswith('bump') and any(content.startswith(prefix) for prefix in DISBOARD_BOT_PREFIX):
-
                 try:
                     response = await self.bot.wait_for('message', check=_disboard_bot_check)
                 except Exception:

@@ -12,11 +12,13 @@ _PEP_URL_ERR = 'Invalid PEP (%s)'
 
 class General(GuildCog(None)):
     @commands.command(name='source')
-    async def _source_command(self, ctx):
-        return await ctx.send('<https://github.com/mental32/ep_bot>')
+    async def _source_command(self, ctx, target: str = None):
+        """Link the source of a target."""
+        if target is None:
+            return await ctx.send('<https://github.com/mental32/ep_bot>')
 
     @commands.command(name='PEP')
-    async def _pep_command(self, ctx, pep_number: int):
+    async def _pep_command(self, ctx, pep_number: int = 0):
         pep = str(pep_number).zfill(4)
         url = f'https://www.python.org/dev/peps/pep-{pep}/'
 

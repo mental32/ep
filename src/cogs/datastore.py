@@ -183,15 +183,6 @@ class DataStore(GuildCog(455072636075245588)):
     async def _data(self, ctx):
         pass
 
-    @_data.error
-    async def _datastore_error(self, ctx, error):
-        traceback.print_exc()
-
-        try:
-            await ctx.send(traceback.format_exc())
-        except Exception:
-            pass
-
     @_data.command(name='init', alias=['setup', 'initialize'])
     async def _datastore_initialize(self, ctx, target: Union[discord.TextChannel, discord.CategoryChannel]):
         """Creates a datastore at a selected location"""
@@ -224,6 +215,17 @@ class DataStore(GuildCog(455072636075245588)):
     async def _datastore_update(self, ctx, *, resource: ResourceConverter):
         pass
 
+    @_data.error
+    @_datastore_create.error
+    @_datastore_destroy.error
+    @_datastore_update.error
+    async def _datastore_error(self, ctx, error):
+        traceback.print_exc()
+
+        try:
+            await ctx.send(traceback.format_exc())
+        except Exception:
+            pass
 
 def setup(bot):
     bot.add_cog(DataStore(bot))
