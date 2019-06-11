@@ -8,6 +8,7 @@ from discord import Role as _Role
 from discord.utils import maybe_coroutine as _run_possible_coroutine
 from discord.ext import commands
 
+from . import get_logger, event
 
 __all__ = ('GuildCogFactory', 'GuildCog')
 
@@ -40,8 +41,10 @@ class GuildCogFactory:
             A flag whether the current cog should be considered "enabled" or "present".
         """
 
+        __enabled: bool = False
+
         def __init__(self, bot: commands.Bot):
-            self.__enabled = False
+            self.logger = get_logger(f'cog.{type(self).__name__}')
             self.bot = bot
 
             if self.bot.is_ready():
