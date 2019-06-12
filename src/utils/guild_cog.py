@@ -15,6 +15,7 @@ __all__ = ('GuildCogFactory', 'GuildCog')
 
 class MethTypes(IntEnum):
     Setup = 0
+    CogCheck = 1
 
 
 class GuildCogFactory:
@@ -47,11 +48,33 @@ class GuildCogFactory:
             self.logger = get_logger(f'cog.{type(self).__name__}')
             self.bot = bot
 
-            if self.bot.is_ready():
-                self.bot.loop.create_task(self.__cog_init())
+            self.__rich_methods = [
+                getattr(self, name)
+                for name, _ in _getmembers(
+                    type(self),
+                    (lambda obj: callable(obj) and hasattr(obj, '__guild_cog_tp__')),
+                )
+            ]
+
+            def _cog_check_factory(func, *args, **kwargs):
+                @functools.wraps(func)
+                async def _cog_check(ctx):
+                    return await _run_possible_coroutine(func, ctx)
+
+                return _cog_check
+
+            self.__cog_check_chain = [
+                self._cog_check_factory(obj)
+                for obj in self.__rich_methods
+                if MethTypes.CogCheck in obj.__guild_cog_tp__
+            ]
+
+
+            if bot.is_ready():
+                bot.loop.create_task(self.__cog_init())
 
         def __repr__(self):
-            return f'<Cog => {{ {type(self).__name__} }}>'
+            return f'<Cog name={type(self).__name__!r}>'
 
         @commands.Cog.listener()
         async def on_ready(self):
@@ -117,16 +140,14 @@ class GuildCogFactory:
         return func
 
     @staticmethod
-    def check(pred: Callable) -> Callable:
-        def decorator(func):
-            @functools.wraps(func)
-            def decorated(*args, **kwargs):
-                if _run_possible_coroutine(pred(*args, **kwargs)):
-                    return _run_possible_coroutine(func)
+    def check(func: Callable) -> Callable:
+        """Decorate a function by marking it as a local cog check of a GuildCog."""
+        if not hasattr(func, '__guild_cog_tp__'):
+            func.__guild_cog_tp__ = [MethTypes.CogCheck]
+        else:
+            func.__guild_cog_tp__.append(MethTypes.CogCheck)
 
-            return decorated
-
-        return decorator
+        return func
 
     @staticmethod
     def passive_command(*, predicate=None, prefix=None):
