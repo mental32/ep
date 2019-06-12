@@ -22,12 +22,12 @@ class GuildCogFactory:
 
     Attributes
     ----------
-    MethTypes : IntEnum
+    MethTypes : :class:`enum.IntEnum`
         An enumeration of method types.
-    GuildCog : GuildCogFactory.GuildCog
+    GuildCog : :class:`GuildCogFactory.GuildCog`
         The base class of a GuildCog instance.
-    products : Dict[str, GuildCogFactory.GuildCog]
-        The products produced by this factory.
+    products : Dict[:class:`str`, :class:`GuildCogFactory.GuildCog`]
+        A memoizing cache for the factory.
     """
 
     class GuildCogBase(commands.Cog):
@@ -108,7 +108,7 @@ class GuildCogFactory:
 
     @staticmethod
     def setup(func: Callable) -> Callable:
-        """Dirty a function by marking it as a setup method of a GuildCog."""
+        """Decorate a function by marking it as a setup method of a GuildCog."""
         if not hasattr(func, '__guild_cog_tp__'):
             func.__guild_cog_tp__ = [MethTypes.Setup]
         else:
@@ -130,6 +130,7 @@ class GuildCogFactory:
 
     @staticmethod
     def passive_command(*, predicate=None, prefix=None):
+        """Registers a passive command"""
         if predicate is not None and prefix is not None:
             raise TypeError('Only predicate or prefix must be supplied not both.')
 
@@ -164,7 +165,14 @@ class GuildCogFactory:
 
 @GuildCogFactory.wrap_staticmethods
 def GuildCog(snowflake: Optional[int]) -> Type[GuildCogFactory.GuildCogBase]:
-    """Factory for GuildCogBase class instances, needed for guild specific GuildCogs."""
+    """Factory for GuildCogBase class instances, needed for guild specific GuildCogs.
+
+    Parameters
+    ----------
+    snowflake : Optional[:class:`int`]
+        The snowflake id of the guild the Cog should be registered under.
+        `None` is accepted when the Cog isn't registered to any one guild.
+    """
     if snowflake is not None and not isinstance(snowflake, int):
         raise TypeError(f'`snowflake` must be an int, got {type(snowflake)!r}')
 
