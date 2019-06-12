@@ -6,8 +6,7 @@ import aiohttp
 from discord.ext import commands
 
 from ..utils import GuildCog, codeblock
-
-_PEP_URL_ERR = 'Invalid PEP (%s)'
+from ..utils.constants import PEP_URL_ERR as _PEP_URL_ERR
 
 
 class General(GuildCog(None)):

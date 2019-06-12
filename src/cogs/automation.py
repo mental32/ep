@@ -3,27 +3,27 @@ import json
 import datetime
 import traceback
 
+import discord
 from discord.ext import tasks
 
 from ..utils import GuildCog, codeblock, event
+from ..utils.constants import (
+    EFFICIENT_PYTHON,
+    DISBOARD_BOT_PREFIX,
+    BUMP_CHANNEL_ID,
+    TWO_HOURS as _TWO_HOURS,
+)
 
 _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
-DISBOARD_BOT_PREFIX = ('!d', '!disboard')
 
-DISBOARD_BOT_ID = 302050872383242240
-BUMP_CHANNEL_ID = 575696848405397544
-
-_TWO_HOURS = 3600 * 2
-
-
-def _disboard_bot_check(message):
+def _disboard_bot_check(message: discord.Message) -> bool:
     return (
         message.channel.id == BUMP_CHANNEL_ID and message.author.id == DISBOARD_BOT_ID
     )
 
 
-class Automation(GuildCog(455072636075245588)):
+class Automation(GuildCog(EFFICIENT_PYTHON)):
     __socket_ignore = []
 
     @GuildCog.setup

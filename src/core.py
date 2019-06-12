@@ -5,10 +5,14 @@ from functools import partial
 
 from discord.ext import commands
 
-_LIB_PATH = pathlib.Path(__file__).parents[0]
-_LIB_EXTS = _LIB_PATH.joinpath('cogs')
+from . import utils
+from .utils import (
+    PRIORITISED_EXTENSIONS,
+    GUILD_SNOWFLAKE as _GUILD_SNOWFLAKE,
+    LIB_EXTS as _LIB_EXTS,
+)
 
-_GUILD_SNOWFLAKE = 455072636075245588
+logger = utils.get_logger(__name__)
 
 
 class Bot(commands.Bot):
