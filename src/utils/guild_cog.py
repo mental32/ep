@@ -128,8 +128,10 @@ class GuildCogFactory:
 
     @staticmethod
     def wrap_staticmethods(obj):
-        for attr in ('setup', 'check', 'passive_command'):
-            setattr(obj, attr, getattr(GuildCogFactory, attr))
+        for name, attr in filter(
+            (lambda obj: isinstance(obj[-1], staticmethod)), __class__.__dict__.items()
+        ):
+            setattr(obj, name, getattr(__class__, name))
         return obj
 
     # Used as decorators to methods on Cogs
