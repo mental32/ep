@@ -89,8 +89,13 @@ class GuildCogFactory:
             return self.__enabled
 
         @_enabled.setter
-        def _enabled(self, value):
-            self.__enabled = bool(value)
+        def _enabled(self, value: bool):
+            state = bool(value)
+
+            if self.__enabled and not state:
+                self.logger.warn(f'Disabling cog: {self!r}')
+
+            self.__enabled = state
 
         @property
         def _guild(self):
