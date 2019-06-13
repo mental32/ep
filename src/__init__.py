@@ -1,6 +1,6 @@
 import sys
 
-assert sys.version_info[:2] >= (3, 6), 'fatal: requires python3.6+'  # noqa
+assert sys.version_info[:2] >= (3, 7), 'fatal: requires python3.7+'  # noqa
 
 from .core import Bot
 
