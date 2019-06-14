@@ -2,6 +2,7 @@ import os
 import pathlib
 import traceback
 from functools import partial
+from typing import List, Tuple
 
 from discord.ext import commands
 
@@ -90,6 +91,19 @@ class Bot(commands.Bot):
         super().load_extension(name)
         logger.info(f'Loaded extension: {name!r}')
 
+    async def on_message(self, message):
+        await self.wait_until_ready()
+
+        channel = message.channel
+        guild = message.guild
+        author = message.author
+
+        if (
+            guild is None
+            or author.guild_permissions.administrator
+            or channel.id in self._guild_command_channels
+        ):
+            await self.process_commands(message)
 
     async def on_command_error(self, ctx, error):
         await ctx.send(error)
