@@ -10,9 +10,11 @@ from ..utils import GuildCog, codeblock, event
 from ..utils.constants import (
     EFFICIENT_PYTHON,
     DISBOARD_BOT_PREFIX,
+    DISBOARD_BOT_ID,
     BUMP_CHANNEL_ID,
     TWO_HOURS as _TWO_HOURS,
 )
+
 
 _PEP = lambda n: f'https://www.python.org/dev/peps/pep-{str(n).zfill(4)}/'
 
@@ -27,7 +29,7 @@ class Automation(GuildCog(EFFICIENT_PYTHON)):
     __socket_ignore = []
 
     @GuildCog.setup
-    async def setup(self):
+    async def __setup(self):
         self.__socket = self._guild.get_channel(455073632859848724)
 
         self.__cached_member_count = self._guild.member_count
@@ -38,7 +40,7 @@ class Automation(GuildCog(EFFICIENT_PYTHON)):
 
         self.statistic_task.start()
 
-        member_role = self._guild_roles['Member']
+        member_role = self.guild_roles['Member']
 
         async for message in bump.history(limit=1):
             delta = (datetime.datetime.now() - message.created_at).total_seconds()
@@ -68,10 +70,6 @@ class Automation(GuildCog(EFFICIENT_PYTHON)):
         await self.__bump_channel.set_permissions(
             target, send_messages=True, read_messages=True
         )
-
-    @event
-    async def on_cog_init(self, cog):
-        print(f'Initalized: {repr(cog)}')
 
     @event
     async def on_message(self, message):
@@ -118,14 +116,11 @@ class Automation(GuildCog(EFFICIENT_PYTHON)):
             return
 
         elif member.bot:
-            return await member.add_roles(self._guild_roles['Bot'])
+            return await member.add_roles(self.guild_roles['Bot'])
 
     @event
     async def on_socket_response(self, msg):
-        if type(msg) is bytes:
-            return
-
-        elif not self.bot.is_ready():
+        if type(msg) is bytes or not self.bot.is_ready():
             return
 
         await asyncio.sleep(1)
