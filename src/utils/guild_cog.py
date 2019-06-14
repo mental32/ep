@@ -9,7 +9,7 @@ from discord.utils import maybe_coroutine as _run_possible_coroutine
 from discord.ext import commands
 
 
-__all__ = ('codeblock', 'GuildCogFactory', 'GuildCog')
+__all__ = ('GuildCogFactory', 'GuildCog')
 
 
 class MethTypes(IntEnum):
