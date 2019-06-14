@@ -14,10 +14,13 @@ DISBOARD_BOT_PREFIX = ('!d', '!disboard')
 DISBOARD_BOT_ID = 302050872383242240
 BUMP_CHANNEL_ID = 575696848405397544
 
-_TWO_HOURS = (3600 * 2)
+_TWO_HOURS = 3600 * 2
+
 
 def _disboard_bot_check(message):
-    return message.channel.id == BUMP_CHANNEL_ID and message.author.id == DISBOARD_BOT_ID
+    return (
+        message.channel.id == BUMP_CHANNEL_ID and message.author.id == DISBOARD_BOT_ID
+    )
 
 
 class Automation(GuildCog(455072636075245588)):
@@ -42,9 +45,13 @@ class Automation(GuildCog(455072636075245588)):
             locked = delta < _TWO_HOURS
 
             if locked:
-                self.bot.loop.create_task(self.bump_unlock(member_role, timeout=_TWO_HOURS - delta))
+                self.bot.loop.create_task(
+                    self.bump_unlock(member_role, timeout=_TWO_HOURS - delta)
+                )
 
-        await self.__bump_channel.set_permissions(member_role, send_messages=locked, read_messages=True)
+        await self.__bump_channel.set_permissions(
+            member_role, send_messages=locked, read_messages=True
+        )
 
     @tasks.loop(seconds=60, reconnect=True)
     async def statistic_task(self):
@@ -58,7 +65,9 @@ class Automation(GuildCog(455072636075245588)):
     async def bump_unlock(self, target, *, timeout):
         """Unlock the bump channel by giving Members send_messages permission after a timeout."""
         await asyncio.sleep(timeout)
-        await self.__bump_channel.set_permissions(target, send_messages=True, read_messages=True)
+        await self.__bump_channel.set_permissions(
+            target, send_messages=True, read_messages=True
+        )
 
     @event
     async def on_cog_init(self, cog):
@@ -72,20 +81,32 @@ class Automation(GuildCog(455072636075245588)):
         elif message.channel.id == BUMP_CHANNEL_ID:
             content = message.content
 
-            if ' ' in content and content.endswith('bump') and any(content.startswith(prefix) for prefix in DISBOARD_BOT_PREFIX):
-
+            if (
+                ' ' in content
+                and content.endswith('bump')
+                and any(content.startswith(prefix) for prefix in DISBOARD_BOT_PREFIX)
+            ):
                 try:
-                    response = await self.bot.wait_for('message', check=_disboard_bot_check)
+                    response = await self.bot.wait_for(
+                        'message', check=_disboard_bot_check
+                    )
                 except Exception:
                     traceback.print_exc()
                     await response.delete()
 
-                if response.embeds and 'bump done' in response.embeds[0].description.lower():
+                if (
+                    response.embeds
+                    and 'bump done' in response.embeds[0].description.lower()
+                ):
                     member_role = self._guild_roles['Member']
 
-                    await self.__bump_channel.set_permissions(member_role, send_messages=False, read_messages=True)
+                    await self.__bump_channel.set_permissions(
+                        member_role, send_messages=False, read_messages=True
+                    )
 
-                    return self.bot.loop.create_task(self.bump_unlock(member_role, timeout=_TWO_HOURS))
+                    return self.bot.loop.create_task(
+                        self.bump_unlock(member_role, timeout=_TWO_HOURS)
+                    )
                 else:
                     await response.delete()
 
@@ -98,9 +119,6 @@ class Automation(GuildCog(455072636075245588)):
 
         elif member.bot:
             return await member.add_roles(self._guild_roles['Bot'])
-
-        await member.add_roles(self._guild_roles['Member'])
-        await self._general.send(f'[{self._guild.member_count}] Welcome {member.mention}!', delete_after=1200.0)
 
     @event
     async def on_socket_response(self, msg):
@@ -126,6 +144,7 @@ class Automation(GuildCog(455072636075245588)):
             pass
         else:
             self.__socket_ignore.append(msg.id)
+
 
 def setup(bot):
     bot.add_cog(Automation(bot))

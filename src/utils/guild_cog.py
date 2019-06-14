@@ -8,14 +8,8 @@ from discord import Role as _Role
 from discord.utils import maybe_coroutine as _run_possible_coroutine
 from discord.ext import commands
 
-__all__ = ('codeblock', 'GuildCogFactory', 'GuildCog')
 
-event = commands.Cog.listener()
-
-def codeblock(string: str, style: str = '') -> str:
-    """Format a string into a code block, escapes any other backticks"""
-    zwsp = "``\u200b"
-    return f'```{style}\n{string.replace("``", zwsp)}```\n'
+__all__ = ('GuildCogFactory', 'GuildCog')
 
 
 class MethTypes(IntEnum):
@@ -34,6 +28,7 @@ class GuildCogFactory:
     products : Dict[str, GuildCogFactory.GuildCog]
         The products produced by this factory.
     """
+
     class GuildCogBase(commands.Cog):
         """Base class for a GuildCog.
 
@@ -44,6 +39,7 @@ class GuildCogFactory:
         _enabled : bool
             A flag whether the current cog should be considered "enabled" or "present".
         """
+
         def __init__(self, bot: commands.Bot):
             self.__enabled = False
             self.bot = bot
@@ -81,7 +77,9 @@ class GuildCogFactory:
         async def __cog_init(self):
             await self.bot.wait_until_ready()
 
-            for _, obj in _getmembers(self, (lambda obj: callable(obj) and hasattr(obj, '__guild_cog_tp__'))):
+            for _, obj in _getmembers(
+                self, (lambda obj: callable(obj) and hasattr(obj, '__guild_cog_tp__'))
+            ):
                 if MethTypes.Setup in obj.__guild_cog_tp__:
                     await _run_possible_coroutine(obj)
 
@@ -122,7 +120,9 @@ class GuildCogFactory:
             def decorated(*args, **kwargs):
                 if _run_possible_coroutine(pred(*args, **kwargs)):
                     return _run_possible_coroutine(func)
+
             return decorated
+
         return decorator
 
     @staticmethod
@@ -132,10 +132,12 @@ class GuildCogFactory:
 
         if prefix is not None:
             if isinstance(prefix, tuple):
-                predicate = lambda message: any(message.content.startswith(substr) for substr in prefix)
+                predicate = lambda message: any(
+                    message.content.startswith(substr) for substr in prefix
+                )
 
             elif isinstance(prefix, str):
-                predicate = lambda message: message.content[:len(prefix)] == prefix
+                predicate = lambda message: message.content[: len(prefix)] == prefix
 
             else:
                 raise TypeError
@@ -143,7 +145,6 @@ class GuildCogFactory:
             predicate = predicate or (lambda _: True)
 
         def _passive_command_wrapper(func):
-
             @commands.Cog.listener('on_message')
             @functools.wraps(func)
             async def wrapper(self, message):

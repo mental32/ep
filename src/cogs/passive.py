@@ -5,13 +5,16 @@ from discord.ext.commands import MemberConverter, BadArgument
 
 from ..utils import codeblock, GuildCog
 
-DESCRIPTION = codeblock('''
+DESCRIPTION = codeblock(
+    '''
 [[Member]]
 username = "{member}"
 ID = {member.id}
 
 {roles}
-''', style='toml')
+''',
+    style='toml',
+)
 
 
 class SlimContext:
@@ -38,7 +41,9 @@ class PassiveCommands(GuildCog(455072636075245588)):
         except BadArgument as error:
             return await message.channel.send(codeblock(repr(error)))
 
-        roles = 'roles = [\n{0}\n]'.format('\n'.join(f'    "{role.id}:{role.name}",' for role in member.roles))
+        roles = 'roles = [\n{0}\n]'.format(
+            '\n'.join(f'    "{role.id}:{role.name}",' for role in member.roles)
+        )
         description = DESCRIPTION.format(member=member, roles=roles)
 
         embed = Embed(description=description)
@@ -57,7 +62,9 @@ class PassiveCommands(GuildCog(455072636075245588)):
 
     @GuildCog.passive_command(prefix=('dis '))
     async def _dis_command(self, message):
-        await self.bot.get_command('dis').callback(None, message.channel, source=message.content[4:].strip())
+        await self.bot.get_command('dis').callback(
+            None, message.channel, source=message.content[4:].strip()
+        )
 
 
 def setup(bot):

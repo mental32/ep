@@ -17,14 +17,18 @@ __version__ = '0.1.0'
 
 ascii_letters = string.ascii_letters + '_'
 
-pseudo_invoke = lambda content: len(content) >= 2 \
-                and content.count('`') == 1 \
-                and content[0] == '`' \
-                and content[1] in ascii_letters
+pseudo_invoke = (
+    lambda content: len(content) >= 2
+    and content.count('`') == 1
+    and content[0] == '`'
+    and content[1] in ascii_letters
+)
 
-pretty_invoke = lambda content: len(content) >= 3 \
-                and content[:2] == '``' \
-                and content[2] in ascii_letters
+pretty_invoke = (
+    lambda content: len(content) >= 3
+    and content[:2] == '``'
+    and content[2] in ascii_letters
+)
 
 
 class TokenTypes(enum.IntEnum):
@@ -50,7 +54,15 @@ class Pseudo(GuildCog(None)):
 
     async def _invoke(self, message, pretty=False):
         try:
-            output = await self._eval(Context(prefix='`', view=StringView(message.content), bot=self.bot, message=message), message.content[1 + pretty:])
+            output = await self._eval(
+                Context(
+                    prefix='`',
+                    view=StringView(message.content),
+                    bot=self.bot,
+                    message=message,
+                ),
+                message.content[1 + pretty :],
+            )
         except BaseException as error:
             output = error
 
@@ -66,11 +78,7 @@ class Pseudo(GuildCog(None)):
         token = []
 
         last_bracket = [None]
-        brackets = {
-            ')': '(',
-            ']': '[',
-            '}': '{'
-        }
+        brackets = {')': '(', ']': '[', '}': '{'}
 
         # Check for unbalanced brackets before tokenizing
         for char in source:
@@ -111,10 +119,8 @@ class Pseudo(GuildCog(None)):
             'message': ctx.message,
             'author': ctx.author,
             'version': __version__,
-
             'codeblock': lambda obj: f'```\n{obj}```',
             'choice': lambda seq: random.choice(seq),
-
             'len': len,
             'str': str,
             'repr': repr,
@@ -143,7 +149,9 @@ class Pseudo(GuildCog(None)):
                 obj_t = type(obj)
 
                 if check and obj_t not in allowed or attr not in allowed[obj_t]:
-                    raise AttributeError(f'\'{obj_t}\' object has no attribute \'{attr}\'')
+                    raise AttributeError(
+                        f'\'{obj_t}\' object has no attribute \'{attr}\''
+                    )
 
                 value = getattr(obj, attr)
 
