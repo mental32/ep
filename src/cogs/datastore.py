@@ -21,6 +21,7 @@ class DataStoreError(Exception):
 class ResourceType(IntEnum):
     pass
 
+
 class Resource:
     @classmethod
     def from_message(cls, message):
@@ -58,6 +59,7 @@ class DataStore(GuildCog(455072636075245588)):
     instances : List[int]
         A list of snowflakes that point to other stores.
     """
+
     FAILED_ASSERTION: str = 'DataStore: Failed assertion channel ({channel_id}) is not in cache!'
     DEFAULT_STORE: int = 586604508021391379
 
@@ -68,7 +70,9 @@ class DataStore(GuildCog(455072636075245588)):
 
         create_task = self.bot.loop.create_task
 
-        self._tasks = [create_task(self._fetch_all(channel_id)) for channel_id in instances]
+        self._tasks = [
+            create_task(self._fetch_all(channel_id)) for channel_id in instances
+        ]
 
     # Internal
 
@@ -103,7 +107,12 @@ class DataStore(GuildCog(455072636075245588)):
         channel = self._get_channel(channel_id)
         return await channel.fetch_message(message_id)
 
-    async def _extract(self, payload: Union[discord.RawBulkMessageDeleteEvent, discord.RawMessageDeleteEvent]) -> Set[Resource]:
+    async def _extract(
+        self,
+        payload: Union[
+            discord.RawBulkMessageDeleteEvent, discord.RawMessageDeleteEvent
+        ],
+    ) -> Set[Resource]:
         channel_id = payload.channel_id
 
         if hasattr(payload, 'message_ids'):
@@ -124,7 +133,7 @@ class DataStore(GuildCog(455072636075245588)):
                 message = await self._fetch_raw(channel_id, snowflake)
 
                 try:
-                    yield Resource.from_message(message)                    
+                    yield Resource.from_message(message)
                 except ValueError:
                     continue
 
@@ -184,7 +193,9 @@ class DataStore(GuildCog(455072636075245588)):
         pass
 
     @_data.command(name='init', alias=['setup', 'initialize'])
-    async def _datastore_initialize(self, ctx, target: Union[discord.TextChannel, discord.CategoryChannel]):
+    async def _datastore_initialize(
+        self, ctx, target: Union[discord.TextChannel, discord.CategoryChannel]
+    ):
         """Creates a datastore at a selected location"""
         if target.id in self.instances:
             raise ValueError('Target is already a datastore instance')
@@ -194,7 +205,9 @@ class DataStore(GuildCog(455072636075245588)):
         await ctx.send(f'Created store at {target.mention} with initial ')
 
     @_data.command(name='terminate', alias=['uninit', 'uninitialize'])
-    async def _datastore_terminate(self, ctx, target: Union[discord.TextChannel, discord.CategoryChannel]):
+    async def _datastore_terminate(
+        self, ctx, target: Union[discord.TextChannel, discord.CategoryChannel]
+    ):
         """Terminates a datastore"""
         try:
             self.instances.remove(target.id)
@@ -226,6 +239,7 @@ class DataStore(GuildCog(455072636075245588)):
             await ctx.send(traceback.format_exc())
         except Exception:
             pass
+
 
 def setup(bot):
     bot.add_cog(DataStore(bot))

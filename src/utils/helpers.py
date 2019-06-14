@@ -6,6 +6,7 @@ __all__ = ('listener', 'event', 'codeblock', 'embed')
 listener = _Cog.listener
 event = listener()
 
+
 def codeblock(string: str, style: str = '') -> str:
     """Format a string into a code block, escapes any other backticks"""
     zwsp = "``\u200b"
@@ -13,4 +14,4 @@ def codeblock(string: str, style: str = '') -> str:
 
 
 def embed() -> _Embed:
-	pass
+    pass

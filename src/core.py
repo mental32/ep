@@ -20,7 +20,9 @@ class Bot(commands.Bot):
         try:
             self.run = partial(self.run, os.environ['DISCORD_TOKEN'])
         except KeyError:
-            self.loop.run_until_complete(self.http.close())  # Close the underlying http session.
+            self.loop.run_until_complete(
+                self.http.close()
+            )  # Close the underlying http session.
             raise RuntimeError('Could not find `DISCORD_TOKEN` in the environment!')
 
         self.load_extension('jishaku')

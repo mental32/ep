@@ -41,7 +41,6 @@ allowed = {
         'vanity_invite': None,
         'roles': None,
     },
-
     Bot: {
         'guilds': None,
         'emojis': None,
@@ -49,7 +48,6 @@ allowed = {
         'activity': None,
         'users': None,
     },
-
     discord.Member: {
         'joined_at': None,
         'activities': None,
@@ -78,7 +76,6 @@ allowed = {
         'is_avatar_animated': None,
         'roles': None,
     },
-
     discord.ClientUser: {
         'name': None,
         'id': None,
@@ -90,7 +87,6 @@ allowed = {
         'display_name': None,
         'is_avatar_animated': None,
     },
-
     discord.User: {
         'name': None,
         'id': None,
@@ -102,7 +98,6 @@ allowed = {
         'display_name': None,
         'is_avatar_animated': None,
     },
-
     discord.Attachment: {
         'id': None,
         'size': None,
@@ -113,7 +108,6 @@ allowed = {
         'proxy_url': None,
         'is_spoiler': None,
     },
-
     discord.Message: {
         'tts': None,
         'type': None,
@@ -139,15 +133,13 @@ allowed = {
         'edited_at': None,
         'jump_url': None,
     },
-
     discord.Reaction: {
         'emoji': None,
         'count': None,
         'me': None,
         'message': None,
-        'custom_emoji': None
+        'custom_emoji': None,
     },
-
     discord.Spotify: {
         'colour': None,
         'color': None,
@@ -163,7 +155,6 @@ allowed = {
         'duration': None,
         'party_id': None,
     },
-
     discord.VoiceState: {
         'deaf': None,
         'mute': None,
@@ -173,7 +164,6 @@ allowed = {
         'afk': None,
         'channel': None,
     },
-
     discord.Emoji: {
         'name': None,
         'id': None,
@@ -186,14 +176,7 @@ allowed = {
         'guild': None,
         'roles': None,
     },
-
-    discord.PartialEmoji: {
-        'name': None,
-        'id': None,
-        'animated': None,
-        'url': None,
-    },
-
+    discord.PartialEmoji: {'name': None, 'id': None, 'animated': None, 'url': None},
     discord.Role: {
         'id': None,
         'name': None,
@@ -209,7 +192,6 @@ allowed = {
         'created_at': None,
         'members': None,
     },
-
     discord.TextChannel: {
         'id': None,
         'name': None,
@@ -223,7 +205,6 @@ allowed = {
         'created_at': None,
         'mention': None,
     },
-
     discord.VoiceChannel: {
         'id': None,
         'name': None,
@@ -231,20 +212,8 @@ allowed = {
         'category_id': None,
         'position': None,
     },
-
-    discord.CategoryChannel: {
-        'id': None,
-        'name': None,
-        'guild': None,
-    },
-
+    discord.CategoryChannel: {'id': None, 'name': None, 'guild': None},
     discord.DMChannel: {},
     discord.Invite: {},
-
-    Context: {
-        'message': None,
-        'bot': None,
-        'guild': None,
-        'author': None,
-    }
+    Context: {'message': None, 'bot': None, 'guild': None, 'author': None},
 }
