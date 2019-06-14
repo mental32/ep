@@ -21,7 +21,7 @@ class Bot(commands.Bot):
     _cog_counter: int = 0
 
     def __init__(self, *args, **kwargs):
-        kwargs['command_prefix'] = ('py_', 'py', 'py?', '?', '>>')
+        kwargs['command_prefix'] = ('py_', 'py?', 'ep.', '?')
 
         super().__init__(*args, **kwargs)
 
