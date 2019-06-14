@@ -15,7 +15,7 @@ __all__ = (
 )
 
 LIB_PATH = pathlib.Path(__file__).parents[0]
-LIB_EXTS = _LIB_PATH.joinpath('cogs')
+LIB_EXTS = LIB_PATH.joinpath('cogs')
 
 GUILD_SNOWFLAKE = 455072636075245588
 DISBOARD_BOT_ID = 302050872383242240
