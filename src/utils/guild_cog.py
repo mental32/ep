@@ -5,6 +5,7 @@ from inspect import getmembers as _getmembers
 from typing import Optional, Type, Dict, Callable
 
 from discord import Role as _Role
+from discord.abc import GuildChannel as _GuildChannel
 from discord.utils import maybe_coroutine as _run_possible_coroutine
 from discord.ext import commands
 
@@ -43,6 +44,7 @@ class GuildCogFactory:
         """
 
         __enabled: bool = False
+        __can_be_enabled: bool = True
 
         def __init__(self, bot: commands.Bot):
             self.logger = get_logger(f'cog.{type(self).__name__}')
@@ -64,11 +66,12 @@ class GuildCogFactory:
                 return _cog_check
 
             self.__cog_check_chain = [
-                self._cog_check_factory(obj)
+                _cog_check_factory(obj)
                 for obj in self.__rich_methods
                 if MethTypes.CogCheck in obj.__guild_cog_tp__
             ]
 
+            self._database = bot.datastore
 
             if bot.is_ready():
                 bot.loop.create_task(self.__cog_init())
@@ -76,13 +79,25 @@ class GuildCogFactory:
         def __repr__(self):
             return f'<Cog name={type(self).__name__!r}>'
 
-        @commands.Cog.listener()
-        async def on_ready(self):
-            await self.__cog_init()
+        async def __cog_init(self):
+            await self.bot.wait_until_ready()
 
-        @property
-        def _guild_roles(self) -> Dict[str, _Role]:
-            return {role.name: role for role in self._guild.roles}
+            if self._database is not None:
+                await self._database.wait_until_ready()
+
+            for obj in self.__rich_methods:
+                if MethTypes.Setup in obj.__guild_cog_tp__:
+                    try:
+                        await _run_possible_coroutine(obj)
+                    except Exception:
+                        traceback.print_exc()
+
+            if self.__can_be_enabled:
+                self._enabled = True
+
+            self.bot.dispatch('cog_init', self)
+
+        # Properties
 
         @property
         def _enabled(self) -> bool:
@@ -105,23 +120,55 @@ class GuildCogFactory:
         def _general(self):
             return self._guild.get_channel(455072636075245590)
 
-        async def __cog_init(self):
-            await self.bot.wait_until_ready()
+        @property
+        def guild_roles(self) -> Dict[str, _Role]:
+            return {role.name: role for role in self._guild.roles}
 
-            for _, obj in _getmembers(
-                self, (lambda obj: callable(obj) and hasattr(obj, '__guild_cog_tp__'))
-            ):
-                if MethTypes.Setup in obj.__guild_cog_tp__:
-                    await _run_possible_coroutine(obj)
+        @property
+        def guild_channels(self) -> Dict[int, _GuildChannel]:
+            return {channel.id: channel for channel in self._guild.channels}
 
-            self._enabled = True
+        @property
+        def cog_can_be_enabled(self) -> bool:
+            return self.__can_be_enabled
 
-            if self._guild is not None:
-                self.__factory__.products[self._guild.name] = self
+        @cog_can_be_enabled.setter
+        def cog_can_be_enabled(self, value: bool):
+            boolean = bool(value)
 
-            self.bot.dispatch('cog_init', self)
+            if boolean is False:
+                self._enabled = False
+                self.__can_be_enabled = False
+            else:
+                self.__can_be_enabled = True
 
-    products: Dict[str, GuildCogBase] = {}
+        @property
+        def instances(self):
+            collection = self._database.default_collection
+            return [] if collection is None else collection.instances
+
+        @property
+        def cog_tasks(self):
+            return self.bot.task_manager
+
+        cog_guild = _guild
+
+        # Checks
+
+        async def cog_check(self, ctx):
+            if not self._enabled or ctx.guild.id != self.__cog_guild__:
+                return False
+
+            for check in self.__cog_check_chain:
+                if not await check(ctx):
+                    return False
+            return True
+
+        # Event handlers
+
+        @event
+        async def on_ready(self):
+            await self.__cog_init()
 
     # Staticmethods
     # Wraps another object with the staticmethods of this factory.
