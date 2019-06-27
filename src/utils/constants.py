@@ -1,5 +1,6 @@
 import pathlib
 from collections import namedtuple
+from pathlib import Path
 
 from .helpers import codeblock
 
@@ -15,6 +16,8 @@ __all__ = (
     'WHOIS_TEMPLATE',
     'PRIORITISED_EXTENSIONS',
 )
+
+ROOT_PATH = Path(__file__).parents[2]
 
 _Extension = namedtuple('Extension', ('critical', 'name'))
 
