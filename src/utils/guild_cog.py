@@ -1,5 +1,6 @@
 import traceback
 import functools
+import hashlib
 from enum import IntEnum
 from inspect import getmembers as _getmembers
 from typing import Optional, Type, Dict, Callable
@@ -49,6 +50,7 @@ class GuildCogFactory:
         def __init__(self, bot: commands.Bot):
             self.logger = get_logger(f'cog.{type(self).__name__}')
             self.bot = bot
+            self.cog_hash = hashlib.md5(self.__module__.encode('ascii') + self.__class__.__name__.encode('ascii')).digest().hex()
 
             self.__rich_methods = [
                 getattr(self, name)
