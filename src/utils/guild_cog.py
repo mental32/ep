@@ -131,6 +131,10 @@ class GuildCogFactory:
             return {channel.id: channel for channel in self._guild.channels}
 
         @property
+        def cog_was_reloaded(self):
+            return self.cog_hash in self.bot.reloaded_cogs
+
+        @property
         def cog_can_be_enabled(self) -> bool:
             return self.__can_be_enabled
 
