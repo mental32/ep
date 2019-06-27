@@ -1,6 +1,7 @@
 import asyncio
 import re
 import os
+import random
 import tempfile
 from pathlib import Path
 from typing import Set, Optional
@@ -135,6 +136,19 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
             raise commands.CommandError(f'cannot fetch directories!')
         else:
             await ctx.send(file=discord.File(fp=str(path), filename=path.name))
+
+    @_filesystem.command(name='rfetch')
+    async def _filesystem_rfetch(self, ctx, directory: Path):
+        """Fetch a random file from the virtual filesystem."""
+        path = self.resolve(directory)
+
+        if path is None:
+            raise commands.CommandError(f'cannot access "{directory!s}": No such file or directory')
+        elif path.is_file():
+            raise commands.CommandError(f'cannot fetch randomly from a file!')
+        else:
+            target = random.choice(list(path.iterdir()))
+            await ctx.send(file=discord.File(fp=str(target), filename=target.name))
 
     @_filesystem.command(name='mount')
     async def _filesystem_mount(self, ctx, path: Path):
