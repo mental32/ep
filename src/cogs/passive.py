@@ -4,17 +4,7 @@ from discord import Embed
 from discord.ext.commands import MemberConverter, BadArgument
 
 from ..utils import codeblock, GuildCog
-
-DESCRIPTION = codeblock(
-    '''
-[[Member]]
-username = "{member}"
-ID = {member.id}
-
-{roles}
-''',
-    style='toml',
-)
+from ..utils.constants import EFFICIENT_PYTHON, WHOIS_TEMPLATE as DESCRIPTION
 
 
 class SlimContext:
@@ -26,7 +16,7 @@ class SlimContext:
         self.message = message
 
 
-class PassiveCommands(GuildCog(455072636075245588)):
+class PassiveCommands(GuildCog(EFFICIENT_PYTHON)):
     converter = MemberConverter()
 
     @GuildCog.passive_command(prefix='whois ')

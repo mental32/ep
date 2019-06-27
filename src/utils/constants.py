@@ -1,4 +1,6 @@
 import pathlib
+from collections import namedtuple
+from pathlib import Path
 
 from .helpers import codeblock
 
@@ -12,12 +14,21 @@ __all__ = (
     'PEP_URL_ERR',
     'GUILD_SNOWFLAKE',
     'WHOIS_TEMPLATE',
+    'PRIORITISED_EXTENSIONS',
 )
 
-LIB_PATH = pathlib.Path(__file__).parents[0]
+ROOT_PATH = Path(__file__).parents[2]
+
+_Extension = namedtuple('Extension', ('critical', 'name'))
+
+PRIORITISED_EXTENSIONS = [
+    _Extension(critical=False, name='automation'),
+]
+
+LIB_PATH = pathlib.Path(__file__).parents[1]
 LIB_EXTS = LIB_PATH.joinpath('cogs')
 
-GUILD_SNOWFLAKE = 455072636075245588
+GUILD_SNOWFLAKE = EFFICIENT_PYTHON = 455072636075245588
 DISBOARD_BOT_ID = 302050872383242240
 BUMP_CHANNEL_ID = 575696848405397544
 
