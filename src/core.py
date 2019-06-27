@@ -4,6 +4,7 @@ import traceback
 from functools import partial
 from typing import List, Tuple
 
+import discord
 from discord.ext import commands
 
 from . import utils
