@@ -34,6 +34,7 @@ class Bot(commands.Bot):
             )  # Close the underlying http session.
             raise RuntimeError('Could not find `DISCORD_TOKEN` in the environment!')
 
+        self._guild_command_channels = []
         self.reloaded_cogs = set()
         self.datastore = None
         self.load_extension('jishaku')
