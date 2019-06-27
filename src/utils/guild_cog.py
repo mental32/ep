@@ -257,9 +257,6 @@ def GuildCog(snowflake: Optional[int]) -> Type[GuildCogFactory.GuildCogBase]:
     if snowflake is not None and not isinstance(snowflake, int):
         raise TypeError(f'`snowflake` must be an int, got {type(snowflake)!r}')
 
-    elif snowflake in GuildCogFactory.products:
-        return GuildCogFactory.products[snowflake]
-
     else:
         GuildCogBase = GuildCogFactory.GuildCogBase
 
