@@ -18,7 +18,6 @@ ROOT_TMP = Path('/tmp')
 class FSInterface(GuildCog(EFFICIENT_PYTHON)):
     __root: Set[Path] = set()
     __removed: Set[Path] = set()
-
     __root_dir: Optional[Path] = None
 
     @GuildCog.setup
@@ -46,6 +45,10 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
                 self.unmount(path)
             else:
                 self.mount(path)
+
+    @GuildCog.check
+    async def __is_owner(self, ctx):
+        return await self.bot.is_owner(ctx.author)
 
     def cog_unload(self):
         self.bot.reloaded_cogs.add(self.cog_hash)
