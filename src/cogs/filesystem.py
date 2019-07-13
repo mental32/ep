@@ -6,11 +6,12 @@ import tempfile
 from pathlib import Path
 from typing import Set, Optional
 
+import psutil
 import discord
 from discord.ext import commands
 
 from ..utils import GuildCog, codeblock
-from ..utils.constants import EFFICIENT_PYTHON
+from ..utils.constants import EFFICIENT_PYTHON, PID
 
 _SYMLINK_RE = re.compile(r' -> (.+)\n+')
 ROOT_TMP = Path('/tmp')
@@ -24,21 +25,60 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
     @GuildCog.setup
     async def __setup(self):
         if self.cog_was_reloaded:
+            self.bot.reloaded_cogs.remove(self.cog_hash)
+            active_pids = []
+
             for file in ROOT_TMP.iterdir():
-                if file.is_dir() and any(self.cog_hash == sub.name for sub in file.iterdir()):
+                if file.is_dir() and any(
+                    self.cog_hash == sub.name for sub in file.iterdir()
+                ):
+                    with open(f'{file / self.cog_hash}') as tag:
+                        try:
+                            pid = int(tag.read().strip())
+                        except ValueError:
+                            self.logger.warn(f'Failed to parse VFS tag file.')
+                            pid = None
+
+                        if pid != PID:
+                            if pid is not None and any(
+                                pid == proc.pid for proc in psutil.process_iter()
+                            ):
+                                self.logger.info(
+                                    f'Discovered an active cousin VFS : PID={pid} : path={file!s}'
+                                )
+                            else:
+                                self.logger.info(
+                                    f'Discovered an orphaned VFS : PID={pid} : path={file!s}'
+                                )
+                                self.logger.info(
+                                    f'Attempting to terminate orphaned VFS : PID={pid}'
+                                )
+
+                                try:
+                                    shutil.rm_tree(file)
+                                except Exception as err:
+                                    self.logger.warn(
+                                        f'Could not terminate orphaned VFS : PID={pid} : reason={err}'
+                                    )
+
+                            continue
+
                     self.__root_dir = file
                     return self.logger.info(f'VFS found! ({file!r}')
             else:
-                self.logger.info('FSInterface was reloaded but could not retrieve VFS instance.')
+                self.logger.info(
+                    'FSInterface was reloaded but could not retrieve VFS instance.'
+                )
 
         self.logger.info('Creating new VFS...')
         self.__root_dir = root = Path(tempfile.mkdtemp())
         self.logger.info(f'VFS is at: {root!r}')
 
-        with open(f'{root / self.cog_hash}', 'w'):
-            # This creates an empty file where the filename is the cog's hash
+        with open(f'{root / self.cog_hash}', 'w') as file:
+            # This creates a file where the filename is the cog's hash
+            # and the file contents is the PID of the running process;
             # This is then used for identification and relinking.
-            pass
+            file.write(str(PID))
 
         for path in self.__root:
             if not path.exists():
