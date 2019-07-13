@@ -60,7 +60,8 @@ class Automation(GuildCog(EFFICIENT_PYTHON)):
 
     @tasks.loop(seconds=60, reconnect=True)
     async def statistic_task(self):
-        await self.bot.wait_until_ready()
+        while not hasattr(self, '__cached_member_count'):
+            await asyncio.sleep(0.1)
 
         if self._guild.member_count != self.__cached_member_count:
             self.__cached_member_count = member_count = self._guild.member_count
