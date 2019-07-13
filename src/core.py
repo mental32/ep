@@ -83,6 +83,11 @@ class Bot(commands.Bot):
             raw = [name for name in raw if name not in extensions]
             extensions += raw
 
+            # Drain the extensions list from the NoneType's
+            # present after any `logger.warn` calls.
+            while None in extensions:
+                extensions.remove(None)
+
         return tuple(extensions)
 
     def add_cog(self, cog):
