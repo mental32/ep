@@ -27,7 +27,11 @@ class Bot(commands.Bot):
         super().__init__(*args, **kwargs)
 
         try:
-            self.run = partial(self.run, os.environ['DISCORD_TOKEN'])
+            self.run = (
+                partial(self.run, os.environ['DISCORD_TOKEN'])
+                if 'EP_DISABLED' not in os.environ
+                else (lambda *_, **__: None)
+            )
         except KeyError:
             self.loop.run_until_complete(
                 self.http.close()
@@ -116,10 +120,16 @@ class Bot(commands.Bot):
     async def on_command_error(self, ctx, error):
         if not ctx.cog._enabled:
             if isinstance(error, commands.CheckFailure):
-                await ctx.send('This command cannot be ran because the cog it belongs to is currently disabled.')
+                await ctx.send(
+                    'This command cannot be ran because the cog it belongs to is currently disabled.'
+                )
             else:
-                logger.warn(f'Exception raised in disabled cog: cog={ctx.cog!r} error={error!r}')
-                await ctx.send('An command belonging to a disabled cog raised an exception.')
+                logger.warn(
+                    f'Exception raised in disabled cog: cog={ctx.cog!r} error={error!r}'
+                )
+                await ctx.send(
+                    'An command belonging to a disabled cog raised an exception.'
+                )
         else:
             await ctx.send(error)
 
