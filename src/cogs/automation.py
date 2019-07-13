@@ -28,6 +28,11 @@ def _disboard_bot_check(message: discord.Message) -> bool:
 class Automation(GuildCog(EFFICIENT_PYTHON)):
     __socket_ignore = []
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.statistic_task.start()
+
     @GuildCog.setup
     async def __setup(self):
         self.__socket = self._guild.get_channel(455073632859848724)
@@ -37,8 +42,6 @@ class Automation(GuildCog(EFFICIENT_PYTHON)):
         self.__bump_channel = bump = self.bot.get_channel(BUMP_CHANNEL_ID)
         self.__member_stat_channel = self.bot.get_channel(567812974270742538)
         self.__time_stat_channel = self.bot.get_channel(567816759675977758)
-
-        self.statistic_task.start()
 
         member_role = self.guild_roles['Member']
 
@@ -57,6 +60,8 @@ class Automation(GuildCog(EFFICIENT_PYTHON)):
 
     @tasks.loop(seconds=60, reconnect=True)
     async def statistic_task(self):
+        await self.bot.wait_until_ready()
+
         if self._guild.member_count != self.__cached_member_count:
             self.__cached_member_count = member_count = self._guild.member_count
             await self.__member_stat_channel.edit(name=f'Total members: {member_count}')
