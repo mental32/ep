@@ -50,7 +50,14 @@ class GuildCogFactory:
         def __init__(self, bot: commands.Bot):
             self.logger = get_logger(f'cog.{type(self).__name__}')
             self.bot = bot
-            self.cog_hash = hashlib.md5(self.__module__.encode('ascii') + self.__class__.__name__.encode('ascii')).digest().hex()
+            self.cog_hash = (
+                hashlib.md5(
+                    self.__module__.encode('ascii')
+                    + self.__class__.__name__.encode('ascii')
+                )
+                .digest()
+                .hex()
+            )
 
             self.__rich_methods = [
                 getattr(self, name)
@@ -162,7 +169,9 @@ class GuildCogFactory:
         # Checks
 
         async def cog_check(self, ctx):
-            if not self._enabled or (ctx.guild is not None and ctx.guild.id != self.__cog_guild__):
+            if not self._enabled or (
+                ctx.guild is not None and ctx.guild.id != self.__cog_guild__
+            ):
                 return False
 
             for check in self.__cog_check_chain:
@@ -245,7 +254,9 @@ class GuildCogFactory:
 
 
 @GuildCogFactory.wrap_staticmethods
-def GuildCog(snowflake: Optional[int], *, owner_only: Optional[bool] = False) -> Type[GuildCogFactory.GuildCogBase]:
+def GuildCog(
+    snowflake: Optional[int], *, owner_only: Optional[bool] = False
+) -> Type[GuildCogFactory.GuildCogBase]:
     """Factory for GuildCogBase class instances, needed for guild specific GuildCogs.
 
     Parameters
@@ -269,6 +280,7 @@ def GuildCog(snowflake: Optional[int], *, owner_only: Optional[bool] = False) ->
         __doc__ = GuildCogBase.__doc__
 
         if owner_only:
+
             @GuildCogFactory.check
             async def __is_owner_check(self, ctx):
                 return await self.bot.is_owner(ctx.message.author)

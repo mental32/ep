@@ -105,7 +105,7 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
             command,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            shell=True
+            shell=True,
         )
 
         stdout, stderr = await process.communicate()
@@ -163,7 +163,9 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
             ls_stdout = await self.__sh_exec(f'ls -alh {path.absolute()!s}')
             await ctx.send(codeblock(_SYMLINK_RE.sub('\n', ls_stdout)))
         else:
-            raise commands.CommandError(f'cannot access "{path!s}": No such file or directory')
+            raise commands.CommandError(
+                f'cannot access "{path!s}": No such file or directory'
+            )
 
     @_filesystem.command(name='fetch')
     async def _filesystem_fetch(self, ctx, file: Path):
@@ -171,7 +173,9 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
         path = self.resolve(file)
 
         if path is None:
-            raise commands.CommandError(f'cannot access "{file!s}": No such file or directory')
+            raise commands.CommandError(
+                f'cannot access "{file!s}": No such file or directory'
+            )
         elif path.is_dir():
             raise commands.CommandError(f'cannot fetch directories!')
         else:
@@ -183,7 +187,9 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
         path = self.resolve(directory)
 
         if path is None:
-            raise commands.CommandError(f'cannot access "{directory!s}": No such file or directory')
+            raise commands.CommandError(
+                f'cannot access "{directory!s}": No such file or directory'
+            )
         elif path.is_file():
             raise commands.CommandError(f'cannot fetch randomly from a file!')
         else:
@@ -194,7 +200,9 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
     async def _filesystem_mount(self, ctx, path: Path):
         """Attempt to mount a path to the virtual filesystem root."""
         if not path.exists():
-            raise commands.CommandError(f'cannot access "{path!s}": No such file or directory')
+            raise commands.CommandError(
+                f'cannot access "{path!s}": No such file or directory'
+            )
         else:
             self.mount(path)
 
@@ -204,7 +212,11 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
         for root_entry in self.__root:
             if root_entry.name == path_name:
                 try:
-                    symlink_entry = next(path for path in self.__root_dir.iterdir() if (path.is_symlink() and path.resolve().samefile(root_entry)))
+                    symlink_entry = next(
+                        path
+                        for path in self.__root_dir.iterdir()
+                        if (path.is_symlink() and path.resolve().samefile(root_entry))
+                    )
                 except StopIteration:
                     await ctx.send('{path_name}: Was not a symbolic link!')
                 else:
