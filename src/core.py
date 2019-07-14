@@ -27,13 +27,18 @@ class Bot(commands.Bot):
         super().__init__(*args, **kwargs)
 
         try:
-            self.run = partial(self.run, os.environ['DISCORD_TOKEN'])
+            self.run = (
+                partial(self.run, os.environ['DISCORD_TOKEN'])
+                if 'EP_DISABLED' not in os.environ
+                else (lambda *_, **__: None)
+            )
         except KeyError:
             self.loop.run_until_complete(
                 self.http.close()
             )  # Close the underlying http session.
             raise RuntimeError('Could not find `DISCORD_TOKEN` in the environment!')
 
+        self._guild_command_channels = []
         self.reloaded_cogs = set()
         self.datastore = None
         self.load_extension('jishaku')
@@ -82,6 +87,11 @@ class Bot(commands.Bot):
             raw = [name for name in raw if name not in extensions]
             extensions += raw
 
+            # Drain the extensions list from the NoneType's
+            # present after any `logger.warn` calls.
+            while None in extensions:
+                extensions.remove(None)
+
         return tuple(extensions)
 
     def add_cog(self, cog):
@@ -108,7 +118,20 @@ class Bot(commands.Bot):
             await self.process_commands(message)
 
     async def on_command_error(self, ctx, error):
-        await ctx.send(error)
+        if not ctx.cog._enabled:
+            if isinstance(error, commands.CheckFailure):
+                await ctx.send(
+                    'This command cannot be ran because the cog it belongs to is currently disabled.'
+                )
+            else:
+                logger.warn(
+                    f'Exception raised in disabled cog: cog={ctx.cog!r} error={error!r}'
+                )
+                await ctx.send(
+                    'An command belonging to a disabled cog raised an exception.'
+                )
+        else:
+            await ctx.send(error)
 
     async def on_connect(self):
         logger.info('Connected!')

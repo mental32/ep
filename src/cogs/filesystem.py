@@ -1,15 +1,17 @@
 import asyncio
 import re
 import os
+import random
 import tempfile
 from pathlib import Path
 from typing import Set, Optional
 
+import psutil
 import discord
 from discord.ext import commands
 
 from ..utils import GuildCog, codeblock
-from ..utils.constants import EFFICIENT_PYTHON
+from ..utils.constants import EFFICIENT_PYTHON, PID
 
 _SYMLINK_RE = re.compile(r' -> (.+)\n+')
 ROOT_TMP = Path('/tmp')
@@ -18,27 +20,65 @@ ROOT_TMP = Path('/tmp')
 class FSInterface(GuildCog(EFFICIENT_PYTHON)):
     __root: Set[Path] = set()
     __removed: Set[Path] = set()
-
     __root_dir: Optional[Path] = None
 
     @GuildCog.setup
     async def __setup(self):
         if self.cog_was_reloaded:
+            self.bot.reloaded_cogs.remove(self.cog_hash)
+            active_pids = []
+
             for file in ROOT_TMP.iterdir():
-                if file.is_dir() and any(self.cog_hash == sub.name for sub in file.iterdir()):
+                if file.is_dir() and any(
+                    self.cog_hash == sub.name for sub in file.iterdir()
+                ):
+                    with open(f'{file / self.cog_hash}') as tag:
+                        try:
+                            pid = int(tag.read().strip())
+                        except ValueError:
+                            self.logger.warn(f'Failed to parse VFS tag file.')
+                            pid = None
+
+                        if pid != PID:
+                            if pid is not None and any(
+                                pid == proc.pid for proc in psutil.process_iter()
+                            ):
+                                self.logger.info(
+                                    f'Discovered an active cousin VFS : PID={pid} : path={file!s}'
+                                )
+                            else:
+                                self.logger.info(
+                                    f'Discovered an orphaned VFS : PID={pid} : path={file!s}'
+                                )
+                                self.logger.info(
+                                    f'Attempting to terminate orphaned VFS : PID={pid}'
+                                )
+
+                                try:
+                                    shutil.rm_tree(file)
+                                except Exception as err:
+                                    self.logger.warn(
+                                        f'Could not terminate orphaned VFS : PID={pid} : reason={err}'
+                                    )
+
+                            continue
+
                     self.__root_dir = file
                     return self.logger.info(f'VFS found! ({file!r}')
             else:
-                self.logger.info('FSInterface was reloaded but could not retrieve VFS instance.')
+                self.logger.info(
+                    'FSInterface was reloaded but could not retrieve VFS instance.'
+                )
 
         self.logger.info('Creating new VFS...')
         self.__root_dir = root = Path(tempfile.mkdtemp())
         self.logger.info(f'VFS is at: {root!r}')
 
-        with open(f'{root / self.cog_hash}', 'w'):
-            # This creates an empty file where the filename is the cog's hash
+        with open(f'{root / self.cog_hash}', 'w') as file:
+            # This creates a file where the filename is the cog's hash
+            # and the file contents is the PID of the running process;
             # This is then used for identification and relinking.
-            pass
+            file.write(str(PID))
 
         for path in self.__root:
             if not path.exists():
@@ -46,6 +86,10 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
                 self.unmount(path)
             else:
                 self.mount(path)
+
+    @GuildCog.check
+    async def __is_owner(self, ctx):
+        return await self.bot.is_owner(ctx.author)
 
     def cog_unload(self):
         self.bot.reloaded_cogs.add(self.cog_hash)
@@ -61,7 +105,7 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
             command,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            shell=True
+            shell=True,
         )
 
         stdout, stderr = await process.communicate()
@@ -119,7 +163,9 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
             ls_stdout = await self.__sh_exec(f'ls -alh {path.absolute()!s}')
             await ctx.send(codeblock(_SYMLINK_RE.sub('\n', ls_stdout)))
         else:
-            raise commands.CommandError(f'cannot access "{path!s}": No such file or directory')
+            raise commands.CommandError(
+                f'cannot access "{path!s}": No such file or directory'
+            )
 
     @_filesystem.command(name='fetch')
     async def _filesystem_fetch(self, ctx, file: Path):
@@ -127,17 +173,36 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
         path = self.resolve(file)
 
         if path is None:
-            raise commands.CommandError(f'cannot access "{file!s}": No such file or directory')
+            raise commands.CommandError(
+                f'cannot access "{file!s}": No such file or directory'
+            )
         elif path.is_dir():
             raise commands.CommandError(f'cannot fetch directories!')
         else:
             await ctx.send(file=discord.File(fp=str(path), filename=path.name))
 
+    @_filesystem.command(name='rfetch')
+    async def _filesystem_rfetch(self, ctx, directory: Path):
+        """Fetch a random file from the virtual filesystem."""
+        path = self.resolve(directory)
+
+        if path is None:
+            raise commands.CommandError(
+                f'cannot access "{directory!s}": No such file or directory'
+            )
+        elif path.is_file():
+            raise commands.CommandError(f'cannot fetch randomly from a file!')
+        else:
+            target = random.choice(list(path.iterdir()))
+            await ctx.send(file=discord.File(fp=str(target), filename=target.name))
+
     @_filesystem.command(name='mount')
     async def _filesystem_mount(self, ctx, path: Path):
         """Attempt to mount a path to the virtual filesystem root."""
         if not path.exists():
-            raise commands.CommandError(f'cannot access "{path!s}": No such file or directory')
+            raise commands.CommandError(
+                f'cannot access "{path!s}": No such file or directory'
+            )
         else:
             self.mount(path)
 
@@ -147,7 +212,11 @@ class FSInterface(GuildCog(EFFICIENT_PYTHON)):
         for root_entry in self.__root:
             if root_entry.name == path_name:
                 try:
-                    symlink_entry = next(path for path in self.__root_dir.iterdir() if (path.is_symlink() and path.resolve().samefile(root_entry)))
+                    symlink_entry = next(
+                        path
+                        for path in self.__root_dir.iterdir()
+                        if (path.is_symlink() and path.resolve().samefile(root_entry))
+                    )
                 except StopIteration:
                     await ctx.send('{path_name}: Was not a symbolic link!')
                 else:

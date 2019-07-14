@@ -1,3 +1,4 @@
+import os
 import pathlib
 from collections import namedtuple
 from pathlib import Path
@@ -5,6 +6,7 @@ from pathlib import Path
 from .helpers import codeblock
 
 __all__ = (
+    'PID',
     'LIB_PATH',
     'LIB_EXTS',
     'DISBOARD_BOT_PREFIX',
@@ -16,6 +18,8 @@ __all__ = (
     'WHOIS_TEMPLATE',
     'PRIORITISED_EXTENSIONS',
 )
+
+PID = os.getpid()
 
 ROOT_PATH = Path(__file__).parents[2]
 
