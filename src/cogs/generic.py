@@ -21,7 +21,7 @@ class General(GuildCog(None)):
         pep = str(pep_number).zfill(4)
         url = f'https://www.python.org/dev/peps/pep-{pep}/'
 
-        async with aiohttp.ClientSession as cs:
+        async with aiohttp.ClientSession() as cs:
             async with cs.get(url) as resp:
                 await ctx.send(
                     f'{url}' if resp.status == 200 else _PEP_URL_ERR % pep_number
