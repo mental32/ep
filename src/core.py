@@ -109,10 +109,11 @@ class Bot(commands.Bot):
         channel = message.channel
         guild = message.guild
         author = message.author
+        member = (guild.get_member(author.id) if guild is not None else None)
 
         if (
             guild is None
-            or author.guild_permissions.administrator
+            or member.guild_permissions.administrator
             or channel.id in self._guild_command_channels
         ):
             await self.process_commands(message)
