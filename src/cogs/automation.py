@@ -73,7 +73,7 @@ class Automation(GuildCog(EFFICIENT_PYTHON)):
             target, send_messages=True, read_messages=True
         )
 
-    async def cog_unload(self):
+    def cog_unload(self):
         self._task.cancel()
 
     @event
