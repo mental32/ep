@@ -26,6 +26,8 @@ def _disboard_bot_check(message: discord.Message) -> bool:
 
 
 class Automation(GuildCog(EFFICIENT_PYTHON)):
+    _PROCESS_BUMP: bool = False
+
     __socket_ignore = []
     _task = None
 
@@ -81,7 +83,7 @@ class Automation(GuildCog(EFFICIENT_PYTHON)):
         if message.author.bot:
             return
 
-        elif message.channel.id == BUMP_CHANNEL_ID:
+        elif self._PROCESS_BUMP and message.channel.id == BUMP_CHANNEL_ID:
             content = message.content
 
             if (
