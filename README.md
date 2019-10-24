@@ -1,17 +1,44 @@
-# Python
+# Ep
+## A different kind of discord bot framework
 
-A discord bot for the [Efficient Python discord](https://discord.gg/kadYAst)
+## Index
 
-## Usage
+ - [Abstract](#Abstract)
+ - [Examples](#Examples)
+ - [Installing](#Installing)
 
-> It is suggested that you have pipenv installed prior to running anything
+## Abstract
 
-Install and update dependencies with `pipenv install`.
+Ep started out as a wholesome discord bot for the efficient python
+[discord guild](https://discord.gg/rmK6jWM) but as time passed it
+grew.
 
-Then export the discord token to be used.
+## Examples
 
-```bash
-export DISCORD_TOKEN="token"
+First we have to generate a configuration file. We can do this easily with:
+ - `ep -C > foo.ep.toml`
+
+Now lets write our cog, here we're creating the file `./cogs/ping.py`:
+
+```py
+# ./cogs/ping.py
+from ep import Cog
+
+@Cog.export(expose=True)
+class Ping(Cog):
+    def action(self) -> str:
+        return 'Pong!'
 ```
 
-then you can run with `make run`
+The bot can now be run with:
+ - `ep -c foo.ep.toml`
+
+Ep uses the [episcript execution engine](https://github.com/mental32/episcript)
+as a front facing user interface, this means that you interact with the bot
+mainly through writing regular Python code
+
+ - `cogs["Ping"].action()`
+
+## Installing
+
+ - `pip3 install git+https://github.com/mental32/ep#egg=ep`
