@@ -1,0 +1,19 @@
+[ep]
+cogpath = "."
+socket_channel = 634044757328265225
+guild_snowflake = 633621230024523776
+
+[ep.constants]
+EFFICIENT_PYTHON = 633621230024523776
+
+[[ep.banners]]
+channel_id = 633624891941322752
+template = "Total members: {guild.member_count}"
+
+[[ep.banners]]
+channel_id = 633624944952999937
+template = "Server time: {now.strftime('%H:%M')}"
+
+[[ep.github]]
+channel_id = 636947889410539531
+repository = "https://github.com/python/cpython"
