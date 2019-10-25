@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "ep"
 version = "1.0.0"
-description = ""
+description = "A different kind of discord bot framework"
 authors = ["mental <m3nta1@yahoo.com>"]
 license = "MIT"
 
