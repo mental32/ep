@@ -4,7 +4,7 @@ import pathlib
 import click
 
 import ep
-from ep.core import WebsocketServer
+from ep import Client, Config, WebsocketServer, probe, http_probe
 
 
 @click.command()
@@ -15,10 +15,14 @@ from ep.core import WebsocketServer
 @click.option("--port", type=int, default=WebsocketServer.port)
 @click.option("--addr", type=str, default=WebsocketServer.host)
 def main(**kwargs):
+    if kwargs["generate_config"]:
+        print(Config.default)
+        return
+
     addr = kwargs["addr"]
     port = kwargs["port"]
 
-    if ep.probe(addr, port):
+    if probe(addr, port):
         # There is another client running and bound to this port.
         return ep.tui.start(addr=addr, port=port)
 
@@ -27,12 +31,15 @@ def main(**kwargs):
     if config is None:
         sys.exit("Please supply a configuration file.")
 
-    if ep.http_probe(config=config):
+    config = Config.from_file(config)
+    disable = kwargs["disable"]
+
+    if not disable and http_probe("", config["ep"]["socket_channel"]):
+        # Check across discord if another client instance is running.
         return ep.tui.start(addr=addr, port=port)
 
     # We're done probing run a client.
-    disable = kwargs["disable"]
-    with ep.Client(config=config, disable=disable) as client:
+    with Client(config=config, disable=disable) as client:
         client.run()
 
 
