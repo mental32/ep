@@ -10,6 +10,8 @@ Welcome to ep's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   examples
+   api
 
 
 Indices and tables
