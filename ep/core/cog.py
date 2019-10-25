@@ -50,12 +50,21 @@ class Cog:
     # staticmethods
 
     @staticmethod
-    def export(cog: Type["Cog"]):
-        if not isinstance(cog, type) and issubclass(cog, Cog):
-            raise TypeError
+    def export(klass: Optional[Type["Cog"]] = None, **flags):
+        if klass is None:
 
-        cog.__export__ = True
-        return cog
+            def decorator(klass: Type["Cog"]):
+                klass.__export__ = True
+                klass.__export_flags__ = flags
+
+            return decorator
+
+        if not isinstance(klass, type) and issubclass(klass, Cog):
+            raise TypeError()
+
+        klass.__export__ = True
+        klass.__export_flags__ = ()
+        return klass
 
     @staticmethod
     def task(func: Callable[..., Awaitable]) -> Callable[..., Awaitable]:
