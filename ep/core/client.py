@@ -105,7 +105,11 @@ class Client(ClientBase):
                     module = importlib.import_module(name)
 
                     for _, obj in inspect.getmembers(module):
-                        if isinstance(obj, type) and getattr(obj, "__export__", False):
+                        if (
+                            isinstance(obj, type)
+                            and issubclass(obj, Cog)
+                            and getattr(obj, "__export__", False)
+                        ):
                             self.add_cog(obj(self))
         finally:
             sys.path.remove(str(cogs))
