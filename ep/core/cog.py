@@ -36,13 +36,10 @@ class Cog:
             .hex()
         )
 
-        try:
-            self.__post_init__()
-        except NotImplementedError:
-            pass
+        self.__post_init__()
 
     def __post_init__(self):
-        raise NotImplementedError()
+        pass
 
     def __repr__(self):
         return f"<Cog name={type(self).__name__!r}>"
