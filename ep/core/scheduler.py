@@ -28,6 +28,8 @@ class TaskScheduler:
         async def handle(coro):
             try:
                 await coro
+            except asyncio.CancelledError:
+                pass
             except Exception:
                 traceback.print_exc()
 
