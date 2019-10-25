@@ -14,9 +14,9 @@ class WebsocketServer:
     async def handler(self, socket, _):
         await socket.close()
 
-    def serve(self) -> Coroutine:
+    async def serve(self):
         if self._coro is not None:
             raise RuntimeError
 
         self._coro = coro = websockets.serve(self.handler, self.host, self.port)
-        return coro
+        await coro

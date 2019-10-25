@@ -30,8 +30,7 @@ class ClientBase(Client, TaskScheduler):
         self.__cogs = {}
         self.__extensions = {}
         self._wss = wss = WebsocketServer(self)
-        self.loop.run_until_complete(wss.serve())
-        # self.schedule_task(wss.serve())
+        self.schedule_task(wss.serve())
 
     # Properties
 
