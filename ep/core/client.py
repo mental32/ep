@@ -25,24 +25,26 @@ class Client(ClientBase):
     _timestamp: int = int(time.time())
 
     def __init__(
-        self, *args, config: pathlib.Path, disable: bool = False, **kwargs
+        self, *args, config: Config, disable: bool = False, **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
 
-        self._config = utils.read_cfg(config)
+        self._config = config
+        if "cogpath" in self._config["ep"]:
+            self.load_cogs(config.fp.parent.joinpath(self._config["ep"]["cogpath"]))
 
         if disable or "EP_DISABLED" in os.environ:
             self.run = lambda *_, **__: None
-        else:
-            try:
-                self.run = partial(self.run, os.environ["DISCORD_TOKEN"])
-            except KeyError:
-                # Tidy up lose connections.
-                self.loop.run_until_complete(self.http.close())
-                raise RuntimeError("Could not find `DISCORD_TOKEN` in the environment!")
+            return
 
-        if "cogpath" in self._config["ep"]:
-            self._load_cogs(pathlib.Path(self._config["ep"]["cogpath"]))
+        try:
+            self.run = partial(self.run, os.environ["DISCORD_TOKEN"])
+        except KeyError:
+            # Tidy up lose connections.
+            self.loop.run_until_complete(self.http.close())
+            raise RuntimeError("Could not find `DISCORD_TOKEN` in the environment!")
+
+        self.runtime_exector = episcript.RuntimeExector()
 
     def __enter__(self):
         self._timestamp = int(time.time())
