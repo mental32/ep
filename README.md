@@ -11,7 +11,12 @@
 
 Ep started out as a wholesome discord bot for the efficient python
 [discord guild](https://discord.gg/rmK6jWM) but as time passed it
-grew.
+grew into a large, wild, not very well maintained code base.
+
+Ep is to the commands extension what django is to flask, just a
+batteries included approach to making discord bots. It's separated
+as a library and discord bot because I found some of the core logic
+usefull for some other projects.
 
 ## Examples
 
