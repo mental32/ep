@@ -39,6 +39,16 @@ class ClientBase(Client, TaskScheduler):
     def wss(self):
         return self._wss
 
+    @property
+    def cogs(self):
+        """Mapping[:class:`str`, :class:`Cog`]: A read-only mapping of cog name to cog."""
+        return types.MappingProxyType(self.__cogs)
+
+    @property
+    def extensions(self):
+        """Mapping[:class:`str`, :class:`py:types.ModuleType`]: A read-only mapping of extension name to extension."""
+        return types.MappingProxyType(self.__extensions)
+
     # Default event handlers
 
     async def on_connect(self):
@@ -51,12 +61,14 @@ class ClientBase(Client, TaskScheduler):
 
     def add_listener(self, func, name=None):
         """The non decorator alternative to :meth:`.listen`.
+
         Parameters
         -----------
         func: :ref:`coroutine <coroutine>`
             The function to call.
         name: Optional[:class:`str`]
             The name of the event to listen for. Defaults to ``func.__name__``.
+
         Example
         --------
         .. code-block:: python3
@@ -77,6 +89,7 @@ class ClientBase(Client, TaskScheduler):
 
     def remove_listener(self, func, name=None):
         """Removes a listener from the pool of listeners.
+
         Parameters
         -----------
         func
@@ -99,6 +112,7 @@ class ClientBase(Client, TaskScheduler):
         event listener. Basically this allows you to listen to multiple
         events from different places e.g. such as :func:`.on_ready`
         The functions being listened to must be a :ref:`coroutine <coroutine>`.
+
         Example
         --------
         .. code-block:: python3
@@ -109,7 +123,9 @@ class ClientBase(Client, TaskScheduler):
             @bot.listen('on_message')
             async def my_message(message):
                 print('two')
+
         Would print one and two in an unspecified order.
+
         Raises
         -------
         TypeError
@@ -126,11 +142,14 @@ class ClientBase(Client, TaskScheduler):
 
     def add_cog(self, cog):
         """Adds a "cog" to the bot.
+
         A cog is a class that has its own event listeners and commands.
+
         Parameters
         -----------
         cog: :class:`.Cog`
             The cog to register to the bot.
+
         Raises
         -------
         TypeError
@@ -148,7 +167,9 @@ class ClientBase(Client, TaskScheduler):
 
     def get_cog(self, name):
         """Gets the cog instance requested.
+
         If the cog is not found, ``None`` is returned instead.
+
         Parameters
         -----------
         name: :class:`str`
@@ -160,9 +181,11 @@ class ClientBase(Client, TaskScheduler):
 
     def remove_cog(self, name):
         """Removes a cog from the bot.
+
         All registered commands and event listeners that the
         cog has registered will be removed as well.
         If no cog is found then this method has no effect.
+
         Parameters
         -----------
         name: :class:`str`
@@ -174,11 +197,6 @@ class ClientBase(Client, TaskScheduler):
             return
 
         cog.cog_eject(self)
-
-    @property
-    def cogs(self):
-        """Mapping[:class:`str`, :class:`Cog`]: A read-only mapping of cog name to cog."""
-        return types.MappingProxyType(self.__cogs)
 
     # extensions
 
@@ -245,17 +263,21 @@ class ClientBase(Client, TaskScheduler):
 
     def load_extension(self, name):
         """Loads an extension.
+
         An extension is a python module that contains commands, cogs, or
         listeners.
+
         An extension must have a global function, ``setup`` defined as
         the entry point on what to do when the extension is loaded. This entry
         point must have a single argument, the ``bot``.
+
         Parameters
         ------------
         name: :class:`str`
             The extension name to load. It must be dot separated like
             regular Python imports if accessing a sub-module. e.g.
             ``foo.test`` if you want to import ``foo/test.py``.
+
         Raises
         --------
         ExtensionNotFound
@@ -279,18 +301,21 @@ class ClientBase(Client, TaskScheduler):
 
     def unload_extension(self, name):
         """Unloads an extension.
+
         When the extension is unloaded, all commands, listeners, and cogs are
         removed from the bot and the module is un-imported.
         The extension can provide an optional global function, ``teardown``,
         to do miscellaneous clean-up if necessary. This function takes a single
         parameter, the ``bot``, similar to ``setup`` from
         :meth:`~.Bot.load_extension`.
+
         Parameters
         ------------
         name: :class:`str`
             The extension name to unload. It must be dot separated like
             regular Python imports if accessing a sub-module. e.g.
             ``foo.test`` if you want to import ``foo/test.py``.
+
         Raises
         -------
         ExtensionNotLoaded
@@ -306,16 +331,19 @@ class ClientBase(Client, TaskScheduler):
 
     def reload_extension(self, name):
         """Atomically reloads an extension.
+
         This replaces the extension with the same extension, only refreshed. This is
         equivalent to a :meth:`unload_extension` followed by a :meth:`load_extension`
         except done in an atomic way. That is, if an operation fails mid-reload then
         the bot will roll-back to the prior working state.
+
         Parameters
         ------------
         name: :class:`str`
             The extension name to reload. It must be dot separated like
             regular Python imports if accessing a sub-module. e.g.
             ``foo.test`` if you want to import ``foo/test.py``.
+
         Raises
         -------
         ExtensionNotLoaded
@@ -354,8 +382,3 @@ class ClientBase(Client, TaskScheduler):
             # revert sys.modules back to normal and raise back to caller
             sys.modules.update(modules)
             raise
-
-    @property
-    def extensions(self):
-        """Mapping[:class:`str`, :class:`py:types.ModuleType`]: A read-only mapping of extension name to extension."""
-        return types.MappingProxyType(self.__extensions)
