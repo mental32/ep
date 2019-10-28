@@ -1,7 +1,8 @@
 import hashlib
 import asyncio
 import inspect
-from typing import Type, Callable, Awaitable
+import functools
+from typing import Type, Callable, Awaitable, Optional, Any
 
 from ..utils import get_logger as _utils_get_logger
 
@@ -64,12 +65,47 @@ class Cog:
         return klass
 
     @staticmethod
-    def task(func: Callable[..., Awaitable]) -> Callable[..., Awaitable]:
-        if not asyncio.iscoroutinefunction(func):
-            raise TypeError()
+    def task(corofunc: Callable[..., Awaitable]) -> Callable[..., Awaitable]:
+        """Mark coroutine function to be scheduled as a :class:`asyncio.Task`.
 
-        func.__schedule_task__ = True
-        return func
+        Parameters
+        ----------
+        corofunc : Callable[..., Coroutine]
+            The coroutine function to mark.
+        """
+        if not asyncio.iscoroutinefunction(corofunc):
+            raise TypeError("target function must be a coroutine function.")
+
+        corofunc.__schedule_task__ = True
+        return corofunc
+
+    @staticmethod
+    def wait_for_envvar(envvar: str) -> Callable[[Callable[..., Any]], Callable]:
+        """Produce a decorator that will block execution of a coroutine until an envvar is seen.
+
+        Parameters
+        ----------
+        envvar : :class:`str`
+            The envvar to look out for.
+        """
+        def decorator(corofunc: Callable[..., Any]) -> Callable[..., Any]:
+            if not asyncio.iscoroutinefunction(corofunc):
+                raise TypeError("target function must be a coroutine function.")
+
+            @functools.wraps(corofunc)
+            async def decorated(*args, **kwargs) -> Any:
+                while True:
+                    try:
+                        value = os.environ[envvar]
+                    except KeyError:
+                        await asyncio.sleep(1)
+                    else:
+                        break
+
+                args = (*args, value)
+                return await corofunc(*args, **kwargs)
+            return decorated
+        return decorator
 
     # Special methods
 
