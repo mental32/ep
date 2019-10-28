@@ -34,7 +34,11 @@ class TaskScheduler:
                 traceback.print_exc()
 
         task = self.__loop.create_task(handle(coro))
-        task.add_done_callback((lambda _: self.__task_registry.pop(name, None)))
+
+        def _task_registry_cleanup(_) -> None:
+            self.__task_registry.pop(name, None)
+
+        task.add_done_callback(_task_registry_cleanup)
 
         self.__task_registry[name] = task
         return task
