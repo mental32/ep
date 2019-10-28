@@ -57,8 +57,5 @@ class Config:
 
         path = path.resolve().absolute()
 
-        if not path.exists():
-            raise FileNotFoundError()
-
-        with open(file.absolute().resolve(), "r") as inf:
-            return cls(toml.loads(inf.read()), fp=file)
+        with open(path) as inf:
+            return cls(toml.loads(inf.read()), fp=path)
