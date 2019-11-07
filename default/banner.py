@@ -79,14 +79,13 @@ class BannerCog(Cog):
         banners = [TextBanner(**entry.copy()) for entry in raw_banners]
         bucket = deque([(1, banner) for banner in banners])
 
+        delay = 1
         while not self.client.is_closed():
-            delay = 0.25
-
             for _ in range(len(bucket)):
                 interval, banner = bucket.popleft()
 
                 if interval != 1:
-                    bucket.appendleft((interval - 1, banner))
+                    bucket.append((interval - delay, banner))
                     continue
 
                 task = self.client.schedule_task(banner.action(self))
@@ -95,7 +94,5 @@ class BannerCog(Cog):
                     bucket.append((banner.interval, banner))
 
                 task.add_done_callback(reschedule_banner_action)
-            else:
-                delay = 1
 
             await asyncio.sleep(delay)
