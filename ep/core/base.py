@@ -48,6 +48,14 @@ class ClientBase(Client, TaskScheduler):
         """Mapping[:class:`str`, :class:`py:types.ModuleType`]: A read-only mapping of extension name to extension."""
         return types.MappingProxyType(self.__extensions)
 
+    # extra events
+
+    def dispatch(self, event_name, *args, **kwargs):
+        super().dispatch(event_name, *args, **kwargs)
+        ev = 'on_' + event_name
+        for event in self.extra_events.get(ev, []):
+            self._schedule_event(event, ev, *args, **kwargs)
+
     # Default event handlers
 
     async def on_connect(self):

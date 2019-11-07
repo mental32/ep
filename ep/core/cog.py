@@ -1,12 +1,17 @@
-import hashlib
 import asyncio
-import inspect
 import functools
-from typing import Type, Callable, Awaitable, Optional, Any
-
-from ..utils import get_logger as _utils_get_logger
+import inspect
+import os
+import hashlib
+import traceback
+from contextlib import suppress
+from functools import partial
+from inspect import iscoroutinefunction, getmembers, signature
+from typing import Type, Callable, Awaitable, Optional, Any, Coroutine
 
 __all__ = ("Cog",)
+
+CoroutineFunction = Callable[..., Coroutine]
 
 
 class Cog:
@@ -25,7 +30,12 @@ class Cog:
 
         self.client = client
 
-        self.__cog_listeners__ = []
+        self.__cog_listeners__ = [
+            (getattr(obj, "__event_listener__"), name)
+            for name, obj in getmembers(self)
+            if hasattr(obj, "__event_listener__")
+        ]
+
         self.__cog_name__ = type(self).__name__
 
         self.cog_hash = (
@@ -88,6 +98,7 @@ class Cog:
         envvar : :class:`str`
             The envvar to look out for.
         """
+
         def decorator(corofunc: Callable[..., Any]) -> Callable[..., Any]:
             if not asyncio.iscoroutinefunction(corofunc):
                 raise TypeError("target function must be a coroutine function.")
@@ -104,8 +115,97 @@ class Cog:
 
                 args = (*args, value)
                 return await corofunc(*args, **kwargs)
+
             return decorated
+
         return decorator
+
+    def _event(corofunc: CoroutineFunction, event_type: str = "", inject: Optional[Callable[[CoroutineFunction], CoroutineFunction]] = None) -> CoroutineFunction:
+        if not event_type:
+            event_type = corofunc.__name__
+
+        if callable(inject):
+            _corofunc = inject(corofunc)
+        else:
+            _corofunc = corofunc
+
+        if _corofunc is not corofunc:
+            _corofunc = functools.wraps(corofunc)(_corofunc)
+
+        _corofunc.__event_listener__ = event_type
+
+        return _corofunc
+
+    @staticmethod
+    def event(_corofunc: Optional[CoroutineFunction] = None, *, tp: str = "", **attrs: Any):
+        """Mark a coroutine function as an event listener.
+
+        >>> @Cog.event
+        ... async def on_message(message: Message) -> None:
+        ...     pass
+
+        >>> @Cog.event(event="message")
+        ... async def parse(self, source):
+        ...     pass
+
+        >>> @Cog.event(event="message", message_channel=0xDEADBEEF)
+        ... async def on_special_message(message):
+        ...     pass
+
+        Parameters
+        ----------
+        _corofunc : Optional[:class:`CoroutineFunction`]
+            When used directly as a decorator this is the function that is
+            being marked.
+        event : :class:`str`
+            The type of event to listen out for.
+        **attrs : Any
+            Implemented for presence based rich predicates.
+        """
+        if _corofunc is not None:
+            return _event(_corofunc, event_type=tp)
+
+        if attrs:
+
+            def decorate(corofunc: CoroutineFunction):
+                sig = signature(corofunc)
+
+                def inject_dyn(_):
+                    async def dyn(*args, **kwargs):
+                        nonlocal sig
+
+                        bound_sig = sig.bind(*args, **kwargs)
+
+                        for target, expected in attrs.items():
+                            _name, *_name_attrs = target.split('_')
+
+                            try:
+                                base = bound_sig.arguments[_name]
+                            except KeyError:
+                                raise NameError(f"name {_name!r} is not defined.")
+
+                            for _attr in _name_attrs:
+                                base = getattr(base, _attr)
+
+                            if base != expected:
+                                return
+
+                        return await corofunc(*args, **kwargs)
+
+                    return dyn
+                return _event(corofunc, event_type=tp, inject=inject_dyn)
+            return decorate
+
+        if event:
+            return partial(_event, event_type=tp)
+
+        return _event
+
+    # Properties
+
+    @property
+    def cog_tasks(self):
+        return []
 
     # Special methods
 
@@ -131,13 +231,3 @@ class Cog:
                 client.remove_listener(getattr(self, method_name))
         finally:
             self.cog_unload()
-
-    # Properties
-
-    @property
-    def cog_guild(self):
-        return self.client.get_guild(self.__cog_guild__)
-
-    @property
-    def cog_tasks(self):
-        pass
