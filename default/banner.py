@@ -12,34 +12,8 @@ from typing import Dict, Coroutine, Union, Any, Optional, Dict, Union, List
 from ep.core import Cog
 
 
-class AbstractBannerEntry(ABC):
-    """An abstract mixin base class for banners."""
-    @staticmethod
-    def eval_template(template: str, *, locals: Optional[Dict] = None) -> str:
-        """Evaluate a template for a given set of locals.
-
-        Parameters
-        ----------
-        template : :class:`str`
-            The template to evaluate.
-        locals : Optional[:class:`collections.abc.Mapping`]
-            The locals to use, None of none provided.
-        """
-        return eval(f'f{template!r}', None, locals)
-
-    @abc.abstractmethod
-    async def action(self, cog: Cog) -> None:
-        """The action to perform to update the banners state.
-
-        Parameters
-        ----------
-        cog : :class:`ep.Cog`
-            The owning cog.
-        """
-
-
 @dataclass
-class TextBanner(AbstractBannerEntry):
+class TextBanner:
     """A banner that has only a textual element.
 
     Attributes
@@ -56,6 +30,19 @@ class TextBanner(AbstractBannerEntry):
     interval: Union[int, float] = 60.0
 
     _NONE_CHANNEL_ERR = "could not get channel channel_id={channel_id}"
+
+    @staticmethod
+    def eval_template(template: str, *, locals: Optional[Dict] = None) -> str:
+        """Evaluate a template for a given set of locals.
+
+        Parameters
+        ----------
+        template : :class:`str`
+            The template to evaluate.
+        locals : Optional[:class:`collections.abc.Mapping`]
+            The locals to use, None of none provided.
+        """
+        return eval(f'f{template!r}', None, locals)
 
     async def action(self, cog: Cog) -> None:
         channel = cog.client.get_channel(self.channel_id)
@@ -78,12 +65,6 @@ BANNERS = {"text": TextBanner}
 
 @Cog.export
 class BannerCog(Cog):
-    @staticmethod
-    def _new_banner(entry: Dict) -> AbstractBannerEntry:
-        _type = entry.pop("type", "text")
-        kwargs = {key.lower(): data for key, data in entry.items()}
-        return BANNERS[_type](**kwargs)
-
     @Cog.task
     async def guild_banner(self) -> None:
         await self.client.wait_until_ready()
@@ -95,7 +76,7 @@ class BannerCog(Cog):
             self.logger.error("No banners were found in the config!")
             return
 
-        banners = [self._new_banner(entry.copy()) for entry in raw_banners]
+        banners = [TextBanner(**entry.copy()) for entry in raw_banners]
         bucket = deque([(1, banner) for banner in banners])
 
         while not self.client.is_closed():
