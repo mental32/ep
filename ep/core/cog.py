@@ -13,6 +13,22 @@ __all__ = ("Cog",)
 
 CoroutineFunction = Callable[..., Coroutine]
 
+def _event(corofunc: CoroutineFunction, event_type: str = "", inject: Optional[Callable[[CoroutineFunction], CoroutineFunction]] = None) -> CoroutineFunction:
+    if not event_type:
+        event_type = corofunc.__name__
+
+    if callable(inject):
+        _corofunc = inject(corofunc)
+    else:
+        _corofunc = corofunc
+
+    if _corofunc is not corofunc:
+        _corofunc = functools.wraps(corofunc)(_corofunc)
+
+    _corofunc.__event_listener__ = event_type
+
+    return _corofunc
+
 
 class Cog:
     """Base class for a GuildCog.
@@ -120,22 +136,6 @@ class Cog:
 
         return decorator
 
-    def _event(corofunc: CoroutineFunction, event_type: str = "", inject: Optional[Callable[[CoroutineFunction], CoroutineFunction]] = None) -> CoroutineFunction:
-        if not event_type:
-            event_type = corofunc.__name__
-
-        if callable(inject):
-            _corofunc = inject(corofunc)
-        else:
-            _corofunc = corofunc
-
-        if _corofunc is not corofunc:
-            _corofunc = functools.wraps(corofunc)(_corofunc)
-
-        _corofunc.__event_listener__ = event_type
-
-        return _corofunc
-
     @staticmethod
     def event(_corofunc: Optional[CoroutineFunction] = None, *, tp: str = "", **attrs: Any):
         """Mark a coroutine function as an event listener.
@@ -170,30 +170,33 @@ class Cog:
             def decorate(corofunc: CoroutineFunction):
                 sig = signature(corofunc)
 
-                def inject_dyn(_):
-                    async def dyn(*args, **kwargs):
-                        nonlocal sig
+                async def dyn(*args, **kwargs):
+                    nonlocal sig
 
-                        bound_sig = sig.bind(*args, **kwargs)
+                    # Bind the signature over the current arguments
+                    bound_sig = sig.bind(*args, **kwargs)
 
-                        for target, expected in attrs.items():
-                            _name, *_name_attrs = target.split('_')
+                    # Pre-invokation predicates
+                    for target, expected in attrs.items():
+                        name, *attrs = target.split('_')
 
-                            try:
-                                base = bound_sig.arguments[_name]
-                            except KeyError:
-                                raise NameError(f"name {_name!r} is not defined.")
+                        try:
+                            base = bound_sig.arguments[name]
+                        except KeyError:
+                            raise NameError(f"name {name!r} is not defined.")
 
-                            for _attr in _name_attrs:
-                                base = getattr(base, _attr)
+                        # Further resolve nested attributes
+                        # foo_bar_baz -> foo.bar.baz
+                        for attr in attrs:
+                            base = getattr(base, attr)
 
-                            if base != expected:
-                                return
+                        # Compare the resolved value with the excepted argument.
+                        if base != expected:
+                            # Failed to satisfy comparison, return eagerly.
+                            return
 
-                        return await corofunc(*args, **kwargs)
-
-                    return dyn
-                return _event(corofunc, event_type=tp, inject=inject_dyn)
+                    return await corofunc(*args, **kwargs)
+                return _event(corofunc, event_type=tp, inject=(lambda _: dyn))
             return decorate
 
         if event:
