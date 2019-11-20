@@ -42,6 +42,11 @@ class TextBanner:
         locals : Optional[:class:`collections.abc.Mapping`]
             The locals to use, None of none provided.
         """
+        assert isinstance(template, str)
+
+        # repr(str) produces quotes around the output
+        # prefix an `f` and you'll end up with perfectly
+        # legal f-string syntax ready for immediate evalutaion
         return eval(f'f{template!r}', None, locals)
 
     async def action(self, cog: Cog) -> None:
@@ -60,11 +65,11 @@ class TextBanner:
         await channel.edit(name=self.eval_template(self.template, locals=locals))
 
 
-BANNERS = {"text": TextBanner}
-
-
 @Cog.export
 class BannerCog(Cog):
+
+    klass = TextBanner
+
     @Cog.task
     @Cog.wait_until_ready
     async def guild_banner(self) -> None:
@@ -76,7 +81,7 @@ class BannerCog(Cog):
             self.logger.error("No banners were found in the config!")
             return
 
-        banners = [TextBanner(**entry.copy()) for entry in raw_banners]
+        banners = [self.klass(**entry.copy()) for entry in raw_banners]
         bucket = deque([(1, banner) for banner in banners])
 
         delay = 1
