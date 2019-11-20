@@ -26,8 +26,8 @@ class Projects(Cog):
             return await message.delete()
 
         if url.netloc not in _VALID_NETLOCS:
-            await message.channel.send(f'"{message.author.mention} That doesn\'t look like a valid vcs link')
+            await message.delete()
+            await message.channel.send(f'"{message.author.mention} That doesn\'t look like a valid vcs link', delete_after=3.0)
             await asyncio.sleep(1)
-            return await message.delete()
 
         await message.channel.send(f"{message.author.mention} - <{message.content}>")
