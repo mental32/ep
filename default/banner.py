@@ -66,8 +66,8 @@ BANNERS = {"text": TextBanner}
 @Cog.export
 class BannerCog(Cog):
     @Cog.task
+    @Cog.wait_until_ready
     async def guild_banner(self) -> None:
-        await self.client.wait_until_ready()
         self.logger.info("Starting guild banner task")
 
         try:

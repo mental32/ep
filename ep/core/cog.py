@@ -106,6 +106,27 @@ class Cog:
         return corofunc
 
     @staticmethod
+    def wait_until_ready(corofunc: Callable[..., Awaitable]) -> Callable[..., Awaitable]:
+        """Block until the bot is ready.
+
+        This is the same as sticking a ``await bot.wait_until_ready()`` at the
+        head of the coroutine.
+
+        Parameters
+        ----------
+        corofunc : Callable[..., Coroutine]
+            The coroutine function to mark.
+        """
+
+        @functools.wraps(corofunc)
+        async def decorated(self, *args, **kwargs):
+            assert hasattr(self, "client")
+            await self.client.wait_until_ready()
+            return await corofunc(*(self, *args), **kwargs)
+
+        return decorated
+
+    @staticmethod
     def wait_for_envvar(envvar: str) -> Callable[[Callable[..., Any]], Callable]:
         """Produce a decorator that will block execution of a coroutine until an envvar is seen.
 
