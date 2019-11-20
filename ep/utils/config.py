@@ -43,6 +43,8 @@ class Config:
     def from_file(cls, file: Union[pathlib.Path, str]) -> "Config":
         """Read the configuration at a filepath and return a dict.
 
+        >>> config = Config.from_file("./ep.toml")
+
         Parameters
         ----------
         file : Union[:class:`pathlib.Path`, :class:`str`]

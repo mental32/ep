@@ -3,6 +3,7 @@ import sys
 import types
 import importlib
 from contextlib import suppress
+from typing import Any, Union
 
 from discord import Client
 from discord.ext.commands import errors
@@ -51,18 +52,25 @@ class ClientBase(Client, TaskScheduler):
     # extra events
 
     def dispatch(self, event_name, *args, **kwargs):
+        # Core dispatching
         super().dispatch(event_name, *args, **kwargs)
+
+        # Extra event handling
         ev = 'on_' + event_name
         for event in self.extra_events.get(ev, []):
             self._schedule_event(event, ev, *args, **kwargs)
 
     # Default event handlers
 
-    async def on_connect(self):
+    async def on_connect(self) -> None:
         self.logger.info("Connected")
 
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         self.logger.info("Ready")
+
+    async def on_socket_response(self, message: Union[Any, bytes]) -> None:
+        if not isinstance(message, bytes):
+            await self._wss.broadcast(message)
 
     # listener registration
 

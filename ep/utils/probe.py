@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 import socket
 
 
@@ -6,11 +8,14 @@ def probe(address: str, port: int) -> bool:
     sock = socket.socket()
 
     try:
-        with sock.connect((address, port)):
-            return True
+        sock.connect((address, port))
     except ConnectionRefusedError:
         return False
-
+    else:
+        return True
+    finally:
+        with suppress(Exception):
+            sock.close()
 
 def http_probe(token: str, channel_id: int) -> bool:
     """Probe a discord socket channel for a presence."""

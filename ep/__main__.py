@@ -1,3 +1,4 @@
+import asyncio
 import sys
 import pathlib
 
@@ -24,7 +25,7 @@ def main(**kwargs):
 
     if probe(addr, port):
         # There is another client running and bound to this port.
-        return ep.tui.start(addr=addr, port=port)
+        return asyncio.run(ep.tui.start(address=addr, port=port))
 
     config = kwargs["config"]
 
@@ -36,7 +37,7 @@ def main(**kwargs):
 
     if not disable and http_probe("", config["ep"]["socket_channel"]):
         # Check across discord if another client instance is running.
-        return ep.tui.start(addr=addr, port=port)
+        return asyncio.run(ep.tui.start(address=addr, port=port))
 
     # We're done probing run a client.
     with Client(config=config, disable=disable) as client:
