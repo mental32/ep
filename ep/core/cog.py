@@ -171,24 +171,24 @@ class Cog:
                 sig = signature(corofunc)
 
                 async def dyn(*args, **kwargs):
-                    nonlocal sig
+                    nonlocal sig, attrs
 
                     # Bind the signature over the current arguments
                     bound_sig = sig.bind(*args, **kwargs)
 
                     # Pre-invokation predicates
                     for target, expected in attrs.items():
-                        name, *attrs = target.split('_')
+                        head, *tail = target.split('_')
 
                         try:
-                            base = bound_sig.arguments[name]
+                            base = bound_sig.arguments[head]
                         except KeyError:
-                            raise NameError(f"name {name!r} is not defined.")
+                            raise NameError(f"name {head!r} is not defined.")
 
                         # Further resolve nested attributes
                         # foo_bar_baz -> foo.bar.baz
-                        for attr in attrs:
-                            base = getattr(base, attr)
+                        for part in tail:
+                            base = getattr(base, part)
 
                         # Compare the resolved value with the excepted argument.
                         if base != expected:
