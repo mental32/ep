@@ -2,6 +2,7 @@
 cogpath = "."
 socket_channel = 634044757328265225
 guild_snowflake = 633621230024523776
+superusers = [633557681277239296, 431627389492264970]
 
 [[ep.banners]]
 channel_id = 633624891941322752
