@@ -100,6 +100,8 @@ class Window:
         while True:
             t1 = self.loop.time()
 
+            await asyncio.sleep(0)
+
             if refresh_debt >= self.refresh_watermark:
                 refresh_debt = 0.0
 
