@@ -14,6 +14,11 @@ _DEFAULT: str = """
 # network agnostic communication, used with the tui control panel.
 #
 # socket_channel = 1234567890
+
+# "superusers" is a list of discord user snowflakes and its used to auth
+# users when the TUI connects through discord directly.
+# 
+# superusers = []
 """.strip()
 
 
