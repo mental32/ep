@@ -55,6 +55,10 @@ class Window:
     def widgets(self):
         return iter(self._widgets)
 
+    @property
+    def connector(self):
+        return self._connector
+
     # Public api
 
     def render_frame(self) -> None:
