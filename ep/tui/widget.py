@@ -13,7 +13,11 @@ class Widget(ABC):
     """
     """
     root: Union[Window, "Widget"]
-    dirty: bool = True
+    _dirty: bool = True
+
+    @property
+    def dirty(self) -> bool:
+        return self._dirty
 
     @property
     def terminal(self):
@@ -58,13 +62,15 @@ class Console(Widget):
         elif char in (b'\x7f', b'\b'):
             if self.inp_buf:
                 self.inp_buf.pop()
+
         else:
             self.inp_buf.append(char.decode())
-        self.dirty = True
+
+        self._dirty = True
 
     def update(self, payload: Any) -> None:
         self.msg_buf.append(payload)
-        self.dirty = True
+        self._dirty = True
 
     def render(self) -> None:
         term = self.terminal
@@ -84,3 +90,5 @@ class Console(Widget):
 
         with term.location(1, term.height - 2):
             print("".join(self.inp_buf)[:width], end="", flush=True)
+
+        self._dirty = True
