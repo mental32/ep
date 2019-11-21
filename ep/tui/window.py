@@ -117,13 +117,10 @@ class Window:
                         if widget.dirty:
                             widget.render()
 
-            try:
+            with suppress(asyncio.TimeoutError):
                 char = await asyncio.wait_for(stdin.read(1), timeout=self.refresh_delay)
-            except asyncio.TimeoutError:
-                char = None
-            else:
+
                 for widget in self.widgets:
-                    with suppress(Exception):
-                        widget.stdinp(char)
+                    widget.stdinp(char)
 
             refresh_debt += self.refresh_delay
