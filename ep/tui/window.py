@@ -94,6 +94,8 @@ class Window:
         stdin, _ = await aioconsole.get_standard_streams()
 
         while True:
+            t1 = self.loop.time()
+
             if refresh_debt >= self.refresh_watermark:
                 refresh_debt = 0.0
 
@@ -101,6 +103,9 @@ class Window:
                     print(terminal.clear)
 
                     self.render_frame()
+
+                    with terminal.location(terminal.width - 11, terminal.height - 2):
+                        print(repr(self.loop.time() - t1)[:10], end="", flush=True)
 
                     for widget in self.widgets:
                         if widget.dirty:
