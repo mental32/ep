@@ -58,7 +58,10 @@ class Console(Widget):
 
     def stdinp(self, char):
         if char in (b'\r', b'\n'):
+            coro = self.root.connector.send("".join(self.inp_buf).encode("ascii"))
+            self.root.loop.create_task(coro)
             self.inp_buf.clear()
+
         elif char in (b'\x7f', b'\b'):
             if self.inp_buf:
                 self.inp_buf.pop()

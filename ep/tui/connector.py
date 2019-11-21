@@ -5,7 +5,7 @@ from functools import partial
 from json import loads as json_loads
 from pickle import loads as pickle_loads
 from traceback import format_exc
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import websockets
 from discord import Client, Message
@@ -35,6 +35,11 @@ class BaseConnector(ABC):
             widget.update(data)
 
     @abstractmethod
+    async def send(self, data: Any) -> None:
+        """
+        """
+
+    @abstractmethod
     async def exhaust(self):
         """
         """
@@ -43,8 +48,17 @@ class BaseConnector(ABC):
 class WebsocketConnector(BaseConnector):
     """
     """
+
+    __socket = None
+
+    async def send(self, data: bytes) -> None:
+        assert isinstance(data, bytes)
+        await self.__socket.send(data)
+
     async def exhaust(self, uri: str):
         async with websockets.connect(uri) as websocket:
+            self.__socket = websocket
+
             async for message in websocket:
                 data = await self.loop.run_in_executor(None, partial(pickle_loads, message))
                 self.update_widgets(data)
@@ -53,12 +67,17 @@ class WebsocketConnector(BaseConnector):
 class DiscordClientConnector(BaseConnector):
     """
     """
-    async def exhaust(self, token: str, config: "ep.Config"):
 
+    __client = None
+
+    async def send(self, data: bytes) -> None:
+        pass
+
+    async def exhaust(self, token: str, config: "ep.Config"):
         superusers = config["ep"]["superusers"]
 
         channel_id: int = config["ep"]["socket_channel"]
-        client = Client()
+        self.__client = client = Client()
 
         @client.event
         async def on_connect() -> None:
