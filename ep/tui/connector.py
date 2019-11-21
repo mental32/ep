@@ -30,7 +30,7 @@ class BaseConnector(ABC):
 
         self._task = self.loop.create_task(self.exhaust(**kwargs))
 
-    def emit(self, data) -> None:
+    def update_widgets(self, data) -> None:
         for widget in self.window.widgets:
             widget.update(data)
 
@@ -47,7 +47,7 @@ class WebsocketConnector(BaseConnector):
         async with websockets.connect(uri) as websocket:
             async for message in websocket:
                 data = await self.loop.run_in_executor(None, partial(pickle_loads, message))
-                self.emit(data)
+                self.update_widgets(data)
 
 
 class DiscordClientConnector(BaseConnector):
@@ -62,15 +62,15 @@ class DiscordClientConnector(BaseConnector):
 
         @client.event
         async def on_connect() -> None:
-            self.emit("Connected")
+            self.update_widgets("Connected")
 
         @client.event
         async def on_ready() -> None:
-            self.emit("Ready")
+            self.update_widgets("Ready")
 
         @client.event
         async def on_error(event, *args, **kwargs) -> None:
-            self.emit((event, format_exc()))
+            self.update_widgets((event, format_exc()))
 
         @client.event
         async def on_message(message: Message) -> None:
@@ -78,9 +78,9 @@ class DiscordClientConnector(BaseConnector):
                 if message.channel.id == channel_id:
                     content = message.content[8:-3]
                     data = json_loads(content)
-                    self.emit(data)
+                    self.update_widgets(data)
             except Exception as err:
-                self.emit(repr(err))
+                self.update_widgets(repr(err))
 
         try:
             await client.start(token, bot=False)
