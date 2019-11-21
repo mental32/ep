@@ -6,11 +6,14 @@ import tty
 import traceback
 from functools import partial
 from contextlib import suppress, contextmanager
-from typing import List
+from typing import Dict, Any, List
 
 import aioconsole
 from blessings import Terminal
 
+from .connector import BaseConnector
+
+__all__ = ("tty_raw", "Window")
 
 @contextmanager
 def tty_raw():
@@ -26,14 +29,12 @@ class Window:
     """Root interface window."""
 
     refresh_delay: float = 0.1
-    watermark: float = 0.2
+    refresh_watermark: float = 0.2
 
-    def __init__(self, socket: "Websocket") -> None:
+    def __init__(self, connector_klass: BaseConnector, connector_kwargs: Dict[Any, Any]) -> None:
         self.loop = loop = asyncio.get_event_loop()
-
-        self._socket = socket
-        self._socket_task = loop.create_task(self.socket_read())
-
+        self._connector = connector_klass(self, loop)
+        self._connector_kwargs = connector_kwargs
         self._terminal = Terminal()
         self._widgets: List["Widget"] = []
 
@@ -54,19 +55,7 @@ class Window:
     def widgets(self):
         return iter(self._widgets)
 
-    @property
-    def socket(self):
-        return self._socket
-
     # Public api
-
-    async def socket_read(self):
-        async for message in self.socket:
-            data = await self.loop.run_in_executor(None, partial(pickle.loads, message))
-
-            for widget in self.widgets:
-                with suppress(Exception):
-                    widget.update(data)
 
     def render_frame(self) -> None:
         term = self.terminal
@@ -94,17 +83,31 @@ class Window:
     async def run_forever(self):
         from .widget import Console
 
-        terminal = self.terminal
-        refresh_counter = self.watermark
+        self._connector.start(**self._connector_kwargs)
 
         if not self._widgets:
             self._widgets.append(Console(root=self))
 
+        terminal = self.terminal
+        refresh_debt = self.refresh_watermark
+
         stdin, _ = await aioconsole.get_standard_streams()
 
         while True:
+            if refresh_debt >= self.refresh_watermark:
+                refresh_debt = 0.0
+
+                if any(widget.dirty for widget in self.widgets):
+                    print(terminal.clear)
+
+                    self.render_frame()
+
+                    for widget in self.widgets:
+                        if widget.dirty:
+                            widget.render()
+
             try:
-                char = await asyncio.wait_for(stdin.read(1), timeout=0.1)
+                char = await asyncio.wait_for(stdin.read(1), timeout=self.refresh_delay)
             except asyncio.TimeoutError:
                 char = None
             else:
@@ -112,16 +115,4 @@ class Window:
                     with suppress(Exception):
                         widget.stdinp(char)
 
-            if refresh_counter >= self.watermark:
-                refresh_counter = 0
-
-                print(terminal.clear)
-
-                self.render_frame()
-
-                for widget in self.widgets:
-                    with suppress(Exception):
-                        widget.render()
-
-            await asyncio.sleep(self.refresh_delay)
-            refresh_counter += self.refresh_delay
+            refresh_debt += self.refresh_delay

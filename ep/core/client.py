@@ -5,11 +5,18 @@ import pathlib
 import inspect
 import importlib
 from functools import partial
+from typing import Union, Any, Optional
 
-from episcript import EpiScriptRuntime
+import discord
+from discord import TextChannel
+from discord.ext.commands import Paginator
 
-from .. import utils
+# from episcript import EpiScriptRuntime
+
+from .cog import Cog
 from .base import ClientBase
+from ..config import Config
+from ..utils import codeblock
 
 
 class Client(ClientBase):
@@ -28,6 +35,8 @@ class Client(ClientBase):
         self, *args, config: Config, disable: bool = False, **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
+
+        self.__socket_noloop = set()
 
         self._config = config
         if "cogpath" in self._config["ep"]:
@@ -67,6 +76,23 @@ class Client(ClientBase):
         if "whitelist" in self.config["ep"]:
             return self.config["ep"]["whitelist"]
         return []
+
+    # Internals
+
+    def get_socket_channel(self) -> Optional[TextChannel]:
+        try:
+            channel_id = self._config["ep"]["socket_channel"]
+        except KeyError:
+            self.logger.warn("`socket_channel` option not present in configuration!")
+            return None
+
+        channel = self.get_channel(channel_id)
+
+        if channel is None:
+            self.logger.error("`socket_channel` could not be found! %s", repr(channel_id))
+            return None
+
+        return channel
 
     # Public
 
@@ -133,3 +159,42 @@ class Client(ClientBase):
     async def on_message(self, message: discord.Message) -> None:
         if message.channel in self.whitelist:
             await self.process_message(message)
+
+    async def on_ready(self) -> None:
+        await super().on_ready()
+
+        channel = self.get_socket_channel()
+
+        if channel is None:
+            return
+
+        await channel.edit(topic="alive")
+
+    async def on_socket_response(self, message: Union[Any, bytes]) -> None:
+        if isinstance(message, bytes) or not self.is_ready():
+            return
+
+        await super().on_socket_response(message)
+
+        channel = self.get_socket_channel()
+
+        if channel is None:
+            return
+
+        await asyncio.sleep(1)
+
+        if message['t'] == 'MESSAGE_CREATE' and int(message['d']['id']) in self.__socket_noloop:
+            return self.__socket_noloop.remove(int(message['d']['id']))
+
+        data = json.dumps(message)
+
+        if len(data) >= 1900:
+            return  # TODO: Impl paging objects
+
+        try:
+            resp = await channel.send(codeblock(data, style="json"))
+        except Exception as err:
+            self.logger.error(err)
+            raise
+        else:
+            self.__socket_noloop.add(resp.id)

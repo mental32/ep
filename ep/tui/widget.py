@@ -5,12 +5,15 @@ from typing import Any, Union, List, Deque
 
 from . import Window
 
+__all__ = ("Widget", "Console")
+
 
 @dataclass
 class Widget(ABC):
     """
     """
     root: Union[Window, "Widget"]
+    dirty: bool = True
 
     @property
     def terminal(self):
@@ -42,35 +45,42 @@ class Console(Widget):
     """
     """
 
-    msg_buf: Deque[Any] = field(repr=False, init=False)
-    inp_buf: str = field(repr=False, init=False)
+    msg_buf: Deque[dict] = field(repr=False, init=False)
+    inp_buf: Deque[str] = field(repr=False, init=False)
 
     def __post_init__(self):
-        self.inp_buf = ""
-        self.msg_buf = deque()
+        self.inp_buf = deque(maxlen=(self.terminal.width * 3))
+        self.msg_buf = deque(maxlen=(self.terminal.height * 3))
 
     def stdinp(self, char):
-        if char != b'\n':
-            self.inp_buf += char.decode()
+        if char in (b'\r', b'\n'):
+            self.inp_buf.clear()
+        elif char in (b'\x7f', b'\b'):
+            if self.inp_buf:
+                self.inp_buf.pop()
         else:
-            self.inp_buf = ""
+            self.inp_buf.append(char.decode())
+        self.dirty = True
 
     def update(self, payload: Any) -> None:
         self.msg_buf.append(payload)
-
-        term = self.terminal
-
-        while len(self.msg_buf) > (term.height - 5):
-            self.msg_buf.popleft()
+        self.dirty = True
 
     def render(self) -> None:
         term = self.terminal
         width = term.width
+        height = term.height
 
-        for index, part in enumerate(self.msg_buf):
-            with term.location(1, index + 1):
+        for index, part in enumerate(reversed(self.msg_buf)):
+            if index >= (height - 4):
+                break
+
+            with term.location(1, height - (index + 4)):
                 fmt = repr(part)[:width - 3]
                 print(fmt, end='', flush=True)
 
+        with term.location(0, term.height - 3):
+            print('╠' + ('═' * (term.width - 2)) + '╣', end="", flush=True)
+
         with term.location(1, term.height - 2):
-            print(self.inp_buf[:width], end="", flush=True)
+            print("".join(self.inp_buf)[:width], end="", flush=True)
