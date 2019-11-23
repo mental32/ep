@@ -77,7 +77,7 @@ class Console(Widget):
             d, t = payload["d"], payload["t"]
 
             if t == "MESSAGE_CREATE":
-                data = f"{d['author']['username']} >> {d['content']!r}"
+                data = f"{d['channel_id']!r} >> {d['author']['username']}#{d['author']['discriminator']} >> {d['content']!r}"
 
         elif isinstance(payload, str):
             data = payload
