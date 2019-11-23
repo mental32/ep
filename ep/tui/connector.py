@@ -35,11 +35,6 @@ class BaseConnector(ABC):
             widget.update(data)
 
     @abstractmethod
-    async def send(self, data: Any) -> None:
-        """
-        """
-
-    @abstractmethod
     async def exhaust(self):
         """
         """
@@ -50,10 +45,6 @@ class WebsocketConnector(BaseConnector):
     """
 
     __socket = None
-
-    async def send(self, data: bytes) -> None:
-        assert isinstance(data, bytes)
-        await self.__socket.send(data)
 
     async def exhaust(self, uri: str, config: "ep.Config"):
         async with websockets.connect(uri) as websocket:
@@ -69,9 +60,6 @@ class DiscordClientConnector(BaseConnector):
     """
 
     __client = None
-
-    async def send(self, data: bytes) -> None:
-        pass
 
     async def exhaust(self, token: str, config: "ep.Config"):
         superusers = config["ep"]["superusers"]
