@@ -33,14 +33,14 @@ class WebsocketServer:
             await socket.send(payload)
 
     async def handler(self, socket, _):
-        self._client.logger.info("WSS CONNECT: %s", repr(socket))
+        self._client.logger.info("ws connect!")
         self._sockets.add(socket)
 
         try:
             async for message in socket:
-                self._client.logger.info("WSS: %s => %s", repr(message), repr(socket))
+                self._client.logger.info("ws: recv => %s", repr(message))
         finally:
-            self._client.logger.info("WSS DISCONNECT: %s", repr(socket))
+            self._client.logger.info("ws disconnect!")
             self._sockets.remove(socket)
 
             with suppress(Exception):
