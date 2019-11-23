@@ -1,5 +1,7 @@
+import asyncio
 import os
 import sys
+import json
 import time
 import pathlib
 import inspect
@@ -20,8 +22,19 @@ from ..utils import codeblock
 
 
 class Client(ClientBase):
-    """A hard client implementation used as default.
-    
+    r"""A hard client implementation used as default.
+
+    Parameters
+    ----------
+    \*args : Any
+        foo
+    config : :class:`ep.Config`
+        The config to use.
+    disable : :class:`bool`
+        disable the run method of the client instance, usefully for testing.
+    \*\*kwargs : Any
+        bar
+
     Attributes
     ----------
     _timestamp : :class:`int`
@@ -53,7 +66,7 @@ class Client(ClientBase):
             self.loop.run_until_complete(self.http.close())
             raise RuntimeError("Could not find `DISCORD_TOKEN` in the environment!")
 
-        self.runtime_exector = episcript.RuntimeExector()
+        # self.runtime_exector = episcript.RuntimeExector()
 
     def __enter__(self):
         self._timestamp = int(time.time())
@@ -148,11 +161,11 @@ class Client(ClientBase):
         message : :class:`discord.Message`
             The discord message to process.
         """
-        locals_ = globals_ = {}  # TODO: namespace serialization/resolution
+        _locals = _globals = None
+        content = message.content
 
-        runtime = EpiScriptRuntime(locals_, globals_)
-        code = await runtime.compile(message.content)
-        await runtime.exec(code)
+        async with self.runtime_exector.exec(content, _locals, _globals) as rv:
+            pass
 
     # Event handlers
 
