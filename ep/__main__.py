@@ -24,16 +24,15 @@ def main(**kwargs):
     disable = kwargs["disable"]
     addr = kwargs["addr"]
     port = kwargs["port"]
-
+    config = kwargs["config"]
     should_probe = kwargs["probe"]
 
     if not disable and should_probe and probe(addr, port):
         # There is another client running and bound to this port.
         uri = f"ws://{addr}:{port}"
-        asyncio.run(tui.start(WebsocketConnector, uri=uri))
+        asyncio.run(tui.start(WebsocketConnector, uri=uri, config=config))
         return
 
-    config = kwargs["config"]
 
     if config is None:
         sys.exit("Please supply a configuration file.")

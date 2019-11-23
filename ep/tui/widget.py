@@ -49,31 +49,42 @@ class Console(Widget):
     """
     """
 
-    msg_buf: Deque[dict] = field(repr=False, init=False)
+    msg_buf: Deque[str] = field(repr=False, init=False)
     inp_buf: Deque[str] = field(repr=False, init=False)
 
     def __post_init__(self):
-        self.inp_buf = deque(maxlen=(self.terminal.width * 3))
-        self.msg_buf = deque(maxlen=(self.terminal.height * 3))
+        self.inp_buf = deque(maxlen=512)
+        self.msg_buf = deque(maxlen=512)
+
+    def _eval_inp(self, source: str) -> None:
+        pass
 
     def stdinp(self, char):
         if char in (b'\r', b'\n'):
-            coro = self.root.connector.send("".join(self.inp_buf).encode("ascii"))
-            self.root.loop.create_task(coro)
+            self._eval_inp("".join(self.inp_buf))
             self.inp_buf.clear()
-
-        elif char in (b'\x7f', b'\b'):
-            if self.inp_buf:
-                self.inp_buf.pop()
-
+        elif char in (b'\x7f', b'\b') and self.inp_buf:
+            self.inp_buf.pop()
         else:
             self.inp_buf.append(char.decode())
 
         self._dirty = True
 
     def update(self, payload: Any) -> None:
-        self.msg_buf.append(payload)
-        self._dirty = True
+        data: Optional[str] = None
+
+        if isinstance(payload, dict) and set(payload) == {"d", "t", "s", "op"} and payload["op"] == 0:
+            d, t = payload["d"], payload["t"]
+
+            if t == "MESSAGE_CREATE":
+                data = f"{d['author']['username']} >> {d['content']!r}"
+
+        elif isinstance(payload, str):
+            data = payload
+
+        if data is not None:
+            self.msg_buf.append(data)
+            self._dirty = True
 
     def render(self) -> None:
         term = self.terminal
@@ -85,7 +96,10 @@ class Console(Widget):
                 break
 
             with term.location(1, height - (index + 4)):
-                fmt = repr(part)[:width - 3]
+                if not isinstance(part, str):
+                    part = repr(part)
+
+                fmt = part[:width - 3]
                 print(fmt, end='', flush=True)
 
         with term.location(0, term.height - 3):

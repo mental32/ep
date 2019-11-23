@@ -55,7 +55,7 @@ class WebsocketConnector(BaseConnector):
         assert isinstance(data, bytes)
         await self.__socket.send(data)
 
-    async def exhaust(self, uri: str):
+    async def exhaust(self, uri: str, config: "ep.Config"):
         async with websockets.connect(uri) as websocket:
             self.__socket = websocket
 
