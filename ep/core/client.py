@@ -18,7 +18,7 @@ from discord.ext.commands import Paginator
 from .cog import Cog
 from .base import ClientBase
 from ..config import Config
-from ..utils import codeblock
+from ..utils import codeblock, infer_token
 
 
 class Client(ClientBase):
@@ -59,12 +59,10 @@ class Client(ClientBase):
             self.run = lambda *_, **__: None
             return
 
-        try:
-            self.run = partial(self.run, os.environ["DISCORD_TOKEN"])
-        except KeyError:
-            # Tidy up lose connections.
+        def cleanup():
             self.loop.run_until_complete(self.http.close())
-            raise RuntimeError("Could not find `DISCORD_TOKEN` in the environment!")
+
+        self.run = partial(self.run, infer_token(cleanup=cleanup))
 
         # self.runtime_exector = episcript.RuntimeExector()
 
