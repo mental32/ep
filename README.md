@@ -20,6 +20,8 @@ usefull for some other projects.
 
 ## Examples
 
+### Ping!
+
 First we have to generate a configuration file. We can do this easily with:
  - `ep -C > foo.ep.toml`
 
@@ -27,22 +29,40 @@ Now lets write our cog, here we're creating the file `./cogs/ping.py`:
 
 ```py
 # ./cogs/ping.py
+
+from discord import Message
 from ep import Cog
 
-@Cog.export(expose=True)
+@Cog.export
 class Ping(Cog):
-    def action(self) -> str:
-        return 'Pong!'
+
+    @Cog.regex(r"!ping", message_author_bot=False)
+    def action(self, message: Message) -> str:
+        await message.channel.send('Pong!')
 ```
+
+Then set the discord token, this is done as an environment variable:
+
+ - `export DISCORD_TOKEN="YOUR_TOKEN_HERE"`
 
 The bot can now be run with:
  - `ep -c foo.ep.toml`
 
-Ep uses the [episcript execution engine](https://github.com/mental32/episcript)
-as a front facing user interface, this means that you interact with the bot
-mainly through writing regular Python code
+### Events
 
- - `cogs["Ping"].action()`
+```py
+class RegularStyle(Cog):
+    @Cog.event
+    async def on_message(self, message: Message) -> None:  # Plain ol' boring events, ugh
+        pass
+```
+
+```py
+class NewStyle(Cog):
+    @Cog.event(tp="on_message", message_channel_id=SPECIAL_CHANNEL)  # Alright! now we can apply predicates over event dispatch.
+    async def filtered_message(self, message: Message) -> None:
+        pass
+```
 
 ## Installing
 
