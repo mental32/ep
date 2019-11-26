@@ -8,17 +8,17 @@ _DEFAULT: str = """
 # When a "cogpath" is specified ep will attempt to import python modules
 # in the directory specified by the "cogpath" variable.
 #
-# cogpath = "."  # relative to the current file
+cogpath = "."  # relative to the current file
 
 # "socket_channel" is the discord channel id of the channel to use for
 # network agnostic communication, used with the tui control panel.
 #
-# socket_channel = 1234567890
+socket_channel = 1234567890
 
 # "superusers" is a list of discord user snowflakes and its used to auth
 # users when the TUI connects through discord directly.
 # 
-# superusers = []
+superusers = []
 """.strip()
 
 
