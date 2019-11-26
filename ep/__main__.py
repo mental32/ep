@@ -1,6 +1,7 @@
 import os
 import asyncio
 import sys
+from functools import partial
 from asyncio import run as await_
 from pathlib import Path
 
@@ -49,7 +50,7 @@ _PROBING_PREDICATE: {
 # Configuration overloads
 @click.option("--socket-channel", type=str, default=None)
 @click.option("--socket-emit", type=bool, default=None)
-@click.option("--cog-path", type=Path, default=None)
+@click.option("--cogpath", type=Path, default=None)
 def main(**kwargs):
     if kwargs["generate_config"]:
         print(Config.default)
@@ -62,11 +63,11 @@ def main(**kwargs):
     config = Config.from_file(config_path)
 
     # Overload the configs values with any suitable cli args.
-    config_overloaders = toml_loads(Config.default)
+    config_overloaders = toml_loads(Config.default)["ep"]
     for key, value in [
         (value, kwargs[value])
         for value in config_overloaders
-        if kwargs[value] is not None
+        if kwargs.get(value, None) is not None
     ]:
         config["ep"][key] = value
 

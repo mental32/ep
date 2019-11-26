@@ -259,10 +259,10 @@ class Cog:
             This is raised if the message object could not be found.
         """
         assert "_corofunc" not in attrs
-        wrapped = self.event(tp="on_message", **attrs)
+        wrapped = __class__.event(tp="on_message", **attrs)
 
         def decorator(corofunc: CoroutineFunction):
-            async def decoratorated(*args, **kwargs):
+            async def decorated(*args, **kwargs):
                 bound = signature(corofunc).bind(*args, **kwargs)
 
                 try:
@@ -303,7 +303,6 @@ class Cog:
                                 group_kwargs[group_name] = value
 
                 kwargs.update(group_kwargs)
-
                 return await corofunc(*args, **kwargs)
             return wrapped(decorated)
         return decorator

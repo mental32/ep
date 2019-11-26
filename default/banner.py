@@ -7,7 +7,7 @@ from abc import ABC
 from dataclasses import dataclass
 from collections import deque
 from functools import partial
-from typing import Dict, Coroutine, Union, Any, Optional, Dict, Union, List, Set
+from typing import Dict, Coroutine, Union, Any, Optional, Dict, Union, List, Set, TypeVar
 
 from discord import VoiceChannel
 from ep.core import Cog
@@ -76,7 +76,7 @@ class BannerCog(Cog):
 
         if category is None:
             self.logger.error("Bad category id?! %s", category_id)
-            continue
+            return
 
         for index in range(len(fields) - len(category.voice_channels)):
             await category.create_voice_channel(name=f"Allocating banner {index}")

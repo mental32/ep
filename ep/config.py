@@ -1,4 +1,4 @@
-import pathlib
+from pathlib import Path
 from typing import Dict, Union, Any
 
 from toml import loads as toml_loads
