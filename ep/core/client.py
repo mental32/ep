@@ -56,7 +56,7 @@ class Client(ClientBase):
             self.load_cogs(config.fp.parent.joinpath(self._config["ep"]["cogpath"]))
 
         if disable or "EP_DISABLED" in os.environ:
-            self.run = lambda *_, **__: None
+            self.run = (lambda *_, **__: None)
             return
 
         def cleanup():

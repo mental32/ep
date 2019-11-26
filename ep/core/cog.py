@@ -321,13 +321,16 @@ class Cog:
     # Creation hooks
 
     def cog_inject(self, client):
+        disabled = self.config["disabled"]
+
         for name, method_name in self.__cog_listeners__:
             client.add_listener(getattr(self, method_name), name)
 
         for _, obj in inspect.getmembers(self):
             if getattr(obj, "__schedule_task__", False):
-                client.logger.info("Scheduling task: %s", repr(obj))
-                client.schedule_task(obj())
+                if not disabled:
+                    client.logger.info("Scheduling task: %s", repr(obj))
+                    client.schedule_task(obj())
 
         return self
 
