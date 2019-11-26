@@ -1,4 +1,5 @@
 import asyncio
+import ast
 import functools
 import inspect
 import os
@@ -234,6 +235,78 @@ class Cog:
             return partial(_event, event_type=tp)
 
         return _event
+
+    @staticmethod
+    def regex(pattern: str, **attrs: Any):
+        """Regex based message content parsing.
+
+        Parameters
+        ----------
+        pattern : :class:`str`
+            The regex pattern to match against
+        **attrs : Any
+            Further attrs to pass into :func:`event`
+
+        Returns
+        -------
+        decorator : Callable[[CoroutineFunction], CoroutineFunction]
+            The decorator that wraps a coroutine function into an event
+            with regex parsing baked in.
+
+        Raises
+        ------
+        ValueError
+            This is raised if the message object could not be found.
+        """
+        assert "_corofunc" not in attrs
+        wrapped = self.event(tp="on_message", **attrs)
+
+        def decorator(corofunc: CoroutineFunction):
+            async def decoratorated(*args, **kwargs):
+                bound = signature(corofunc).bind(*args, **kwargs)
+
+                try:
+                    content = bound["message"].content
+                except KeyError:
+                    for arg in bound.args:
+                        if isinstance(arg, Message):
+                            content = arg.content
+                            break
+                    else:
+                        raise ValueError("could not infer message object for a regex match.")
+
+                loop = asyncio.get_event_loop()
+                match = loop.run_in_executor(None, partial(fullmatch, pattern, content))
+
+                if match is None:
+                    return  # XXX: Should we raise here?
+
+                group_dict = match.groupdict()
+                annotations = corofunc.__annotations__
+
+                if group_dict and annotations:
+                    group_kwargs = group_dict.copy()
+
+                    for group_name, group_value in group_dict.items():
+                        if group_name in annotations:
+                            value_annotation = annotations[group_name]
+
+                            # TODO: Unions, Tuples, ...
+
+                            if value_annotation in (int, float, list, tuple, dict, set, frozenset):
+                                try:
+                                    value = ast.literal_eval(group_value)
+                                except ValueError:
+                                    value = group_value
+                                    # value = eval(f"{value_annotation.__name__}({group_value})", {}, {})
+
+                                group_kwargs[group_name] = value
+
+                kwargs.update(group_kwargs)
+
+                return await corofunc(*args, **kwargs)
+            return wrapped(decorated)
+        return decorator
 
     # Properties
 
