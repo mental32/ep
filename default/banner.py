@@ -46,10 +46,13 @@ class TextBanner:
         """
         assert isinstance(template, str)
 
+        if locals is None:
+            locals = {}
+
         # repr(str) produces quotes around the output
         # prefix an `f` and you'll end up with perfectly
         # legal f-string syntax ready for immediate evalutaion
-        return eval(f'f{template!r}', None, locals)
+        return eval(f"f{template!r}", {}, locals)
 
     async def action(self, cog: Cog) -> None:
         locals = {
