@@ -1,15 +1,33 @@
 import logging
 from contextlib import suppress
 from socket import socket
-from typing import Optional
+from typing import Optional, Callable, Any
 
 import coloredlogs
 from discord.http import HTTPClient
+
+__all__ = ("infer_token", "codeblock", "probe", "http_probe", "get_logger")
+
+
+def infer_token(envvar: str = "DISCORD_TOKEN", *, cleanup: Optional[Callable[[], Any]] = None, exit: bool = True) -> str:
+    """Read an environment variable and possibly exit if its missing."""
+    try:
+        return os.environ[envvar]
+    except KeyError:
+        if callable(cleanup):
+            cleanup()
+
+        if not exit:
+            raise
+
+        sys.exit(f"Could not find `{envvar}` in the environment!")
+
 
 def codeblock(string: str, style: str = "") -> str:
     """Format a string into a code block, escapes any other backticks"""
     zwsp = "``\u200b"
     return f'```{style}\n{string.replace("``", zwsp)}```\n'
+
 
 def probe(address: str, port: int) -> bool:
     """Probe a system port by attempting to connect to it."""
@@ -24,6 +42,7 @@ def probe(address: str, port: int) -> bool:
     finally:
         with suppress(Exception):
             sock.close()
+
 
 async def http_probe(token: str, config: "ep.Config") -> bool:
     """Probe a discord socket channel for a presence."""
@@ -47,6 +66,7 @@ async def http_probe(token: str, config: "ep.Config") -> bool:
                 return True
     finally:
         await http.close()
+
 
 def get_logger(
     name: str, level: str = "INFO", fmt: Optional[str] = None
