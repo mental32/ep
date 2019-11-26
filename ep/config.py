@@ -1,7 +1,7 @@
 import pathlib
 from typing import Dict, Union, Any
 
-import toml
+from toml import loads as toml_loads
 
 _DEFAULT: str = """
 [ep]
@@ -30,9 +30,10 @@ class Config:
     default : :class:`str`
         The default toml configuration.
     """
+
     default: str = _DEFAULT
 
-    def __init__(self, data: Dict, fp: pathlib.Path) -> None:
+    def __init__(self, data: Dict, fp: Path) -> None:
         self.fp = fp
         self.data = data
 
@@ -45,7 +46,7 @@ class Config:
     # Constructors
 
     @classmethod
-    def from_file(cls, file: Union[pathlib.Path, str]) -> "Config":
+    def from_file(cls, file: Union[Path, str]) -> "Config":
         """Read the configuration at a filepath and return a dict.
 
         >>> config = Config.from_file("./ep.toml")
@@ -56,13 +57,14 @@ class Config:
             The file to read.
         """
         if isinstance(file, str):
-            path = pathlib.Path(file)
-        elif isinstance(file, pathlib.Path):
+            path = Path(file)
+        elif isinstance(file, Path):
             path = file
         else:
-            raise TypeError()
+            raise TypeError(
+                "`file` argument must be a string or pathlib.Path instance."
+            )
 
         path = path.resolve().absolute()
 
-        with open(path) as inf:
-            return cls(toml.loads(inf.read()), fp=path)
+        return cls(toml_loads(path.read_text()), fp=path)
