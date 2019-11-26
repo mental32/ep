@@ -89,6 +89,8 @@ def main(**kwargs):
         "discord", "WARN", fmt="[[ discord ]] [%(asctime)s] %(levelname)s - %(message)s"
     )
 
+    config["disabled"] = disable
+
     # We're done probing, run a client.
     with Client(config=config, disable=disable) as client:
         client.run()
