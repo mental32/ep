@@ -182,7 +182,7 @@ class Client(ClientBase):
         await channel.edit(topic="alive")
 
     async def on_socket_response(self, message: Union[Any, bytes]) -> None:
-        if isinstance(message, bytes) or not self.is_ready():
+        if isinstance(message, bytes) or not self._config["ep"]["socket_emit"] or not self.is_ready():
             return
 
         await super().on_socket_response(message)

@@ -15,6 +15,10 @@ cogpath = "."  # relative to the current file
 #
 socket_channel = 1234567890
 
+# "socket_emit" is used to control whether to relay socket messages into
+# the "socket_channel"
+socket_emit = true
+
 # "superusers" is a list of discord user snowflakes and its used to auth
 # users when the TUI connects through discord directly.
 # 
