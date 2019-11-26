@@ -165,20 +165,30 @@ class Cog:
         ... async def on_message(message: Message) -> None:
         ...     pass
 
-        >>> @Cog.event(event="message")
+        >>> @Cog.event(tp="message")
         ... async def parse(self, source):
         ...     pass
 
-        >>> @Cog.event(event="message", message_channel=0xDEADBEEF)
+        >>> @Cog.event(tp="message", message_channel=0xDEADBEEF)
         ... async def on_special_message(message):
         ...     pass
+
+        >>> marked = Cog.event(tp="on_message")
+        >>> @marked
+        ... async def some_event(self, message):
+        ...     pass
+        ...
+        >>> @marked
+        ... async def some_other_event(self, message):
+        ...     pass
+        ...
 
         Parameters
         ----------
         _corofunc : Optional[:class:`CoroutineFunction`]
             When used directly as a decorator this is the function that is
             being marked.
-        event : :class:`str`
+        tp : :class:`str`
             The type of event to listen out for.
         **attrs : Any
             Implemented for presence based rich predicates.
@@ -220,7 +230,7 @@ class Cog:
                 return _event(corofunc, event_type=tp, inject=(lambda _: dyn))
             return decorate
 
-        if event:
+        if tp:
             return partial(_event, event_type=tp)
 
         return _event
