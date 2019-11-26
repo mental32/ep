@@ -7,8 +7,9 @@ from abc import ABC
 from dataclasses import dataclass
 from collections import deque
 from functools import partial
-from typing import Dict, Coroutine, Union, Any, Optional, Dict, Union, List
+from typing import Dict, Coroutine, Union, Any, Optional, Dict, Union, List, Set
 
+from discord import VoiceChannel
 from ep.core import Cog
 
 
@@ -25,8 +26,9 @@ class TextBanner:
     interval : Union[:class:`int`, :class:`str`]
         The interval of delay between actions.
     """
-    channel_id: int
+
     template: str
+    channel: VoiceChannel
     interval: Union[int, float] = 60.0
 
     _NONE_CHANNEL_ERR = "could not get channel channel_id={channel_id}"
@@ -50,25 +52,34 @@ class TextBanner:
         return eval(f'f{template!r}', None, locals)
 
     async def action(self, cog: Cog) -> None:
-        channel = cog.client.get_channel(self.channel_id)
-
-        if channel is None:
-            err = self._NONE_CHANNEL_ERR.format(channel_id=self.channel_id)
-            cog.logger.warn(err)
-            return
-
         locals = {
-            'guild': channel.guild,
-            'now': datetime.datetime.now(),
+            "guild": self.channel.guild,
+            "now": datetime.datetime.now(),
         }
 
-        await channel.edit(name=self.eval_template(self.template, locals=locals))
+        await self.channel.edit(name=self.eval_template(self.template, locals=locals))
 
 
 @Cog.export
 class BannerCog(Cog):
+    T = TypeVar("T")
 
-    klass = TextBanner
+    klass: T = TextBanner
+
+    async def _alloc_banner(
+        self, category_id: int, fields: List[str], bucket: Set[T]
+    ) -> None:
+        category = self.client.get_category(category_id)
+
+        if category is None:
+            self.logger.error("Bad category id?! %s", category_id)
+            continue
+
+        for index in range(len(fields) - len(category.voice_channels)):
+            await category.create_voice_channel(name=f"Allocating banner {index}")
+
+        for fmt, channel in zip(fields, category.voice_channels):
+            bucket.add(self.klass(template=fmt, channel=channel))
 
     @Cog.task
     @Cog.wait_until_ready
@@ -81,8 +92,25 @@ class BannerCog(Cog):
             self.logger.error("No banners were found in the config!")
             return
 
-        banners = [self.klass(**entry.copy()) for entry in raw_banners]
-        bucket = deque([(1, banner) for banner in banners])
+        entry_mapping = defaultdict(list)
+        category_id: Optional[str] = None
+
+        for entry in raw_banners:
+            if entry[:11] == "category://":
+                category_id = int(banner_[11:])
+
+            entry_mapping[category_id].append(entry)
+
+        if entry_mapping.pop(None, []):
+            self.logger.warn("Found %s unreachable banner(s)!", len(banners))
+
+        banners: Set[T] = set()
+        await asyncio.gather(
+            self._alloc_banner(category_id, fields, banners)
+            for category_id, fields in entry_mapping.items()
+        )
+
+        bucket: Deque[Tuple[int, T]] = deque([(1, banner) for banner in banners])
 
         delay = 1
         while not self.client.is_closed():

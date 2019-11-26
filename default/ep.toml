@@ -2,13 +2,13 @@
 cogpath = "."  # Relative to the current file
 socket_emit = true
 socket_channel = 634044757328265225
-guild_snowflake = 633621230024523776
 superusers = [633557681277239296, 431627389492264970]
 
-[[ep.banners]]
-channel_id = 633624891941322752
-template = "Total members: {guild.member_count}"
+# `default` specific config values.
+guild_snowflake = 633621230024523776
 
-[[ep.banners]]
-channel_id = 633624944952999937
-template = "Server time: {now.strftime('%H:%M')}"
+banners = [
+    "category://633624313043353620",
+    "Total members: {guild.member_count}",
+    "Server time: {now.strftime('%H:%M')}"
+]
