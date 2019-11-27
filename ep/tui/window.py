@@ -12,6 +12,7 @@ import aioconsole
 from blessings import Terminal
 
 from .connector import BaseConnector
+from .widget import Console
 
 __all__ = ("tty_raw", "Window")
 
@@ -85,8 +86,6 @@ class Window:
                     print("║", end="", flush=True)
 
     async def run_forever(self):
-        from .widget import Console
-
         self._connector.refresh(**self._connector_kwargs)
 
         if not self._widgets:

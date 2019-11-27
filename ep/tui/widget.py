@@ -3,13 +3,11 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Union, List, Deque, Dict, TypeVar, TYPE_CHECKING
 
-from . import Window
-
 
 K = TypeVar("K")
 V = TypeVar("V")
 
-__all__ = ("Widget", "Console")
+__all__ = ("AbstractWidget", "Console")
 
 
 def intersects(sub: Dict[K, V], dom: [K, V]) -> bool:
@@ -22,11 +20,11 @@ def intersects(sub: Dict[K, V], dom: [K, V]) -> bool:
 
 
 @dataclass
-class Widget(ABC):
+class AbstractWidget(ABC):
     """
     """
 
-    root: Union[Window, "Widget"]
+    root: Union["Window", "AbstractWidget"]
     _dirty: bool = True
 
     @property
@@ -37,7 +35,7 @@ class Widget(ABC):
     def terminal(self):
         base = self.root
 
-        while isinstance(base, Widget):
+        while isinstance(base, AbstractWidget):
             base = base.root
 
         return base.terminal
@@ -59,7 +57,7 @@ class Widget(ABC):
 
 
 @dataclass
-class Console(Widget):
+class Console(AbstractWidget):
     """A widget representing a view and an input."""
 
     msg_buf: Deque[str] = field(repr=False, init=False)
