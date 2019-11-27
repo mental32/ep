@@ -19,7 +19,7 @@ from ep import (
 )
 from ep.tui import start as tui_start, DiscordClientConnector, WebsocketConnector
 
-_PROBING_PREDICATE: {
+_PROBING_PREDICATE = {
     # Check if another client instance is already running locally.
     (
         lambda _, kwargs: (
@@ -80,7 +80,7 @@ def main(**kwargs):
         for predicate, corofunc in _PROBING_PREDICATE.items():
             kwargs_ = predicate(config, kwargs)
 
-            if args is not None:
+            if kwargs_ is not None:
                 return await_(corofunc(config=config, **kwargs_))
 
         sys.exit("Could not find or authenticate to any local or nonlocal sessions.")
