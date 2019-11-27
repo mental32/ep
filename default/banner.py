@@ -5,9 +5,20 @@ import time
 import traceback
 from abc import ABC
 from dataclasses import dataclass
-from collections import deque
+from collections import deque, defaultdict
 from functools import partial
-from typing import Dict, Coroutine, Union, Any, Optional, Dict, Union, List, Set, TypeVar
+from typing import (
+    Dict,
+    Coroutine,
+    Union,
+    Any,
+    Optional,
+    Dict,
+    Union,
+    List,
+    Set,
+    TypeVar,
+)
 
 from discord import VoiceChannel
 from ep.core import Cog
@@ -32,6 +43,9 @@ class TextBanner:
     interval: Union[int, float] = 60.0
 
     _NONE_CHANNEL_ERR = "could not get channel channel_id={channel_id}"
+
+    def __hash__(self):
+        return hash(self.channel)
 
     @staticmethod
     def eval_template(template: str, *, locals: Optional[Dict] = None) -> str:
@@ -69,10 +83,10 @@ class BannerCog(Cog):
 
     klass: T = TextBanner
 
-    async def _alloc_banner(
+    async def _alloc_banner_slots(
         self, category_id: int, fields: List[str], bucket: Set[T]
     ) -> None:
-        category = self.client.get_category(category_id)
+        category = self.client.get_channel(category_id)
 
         if category is None:
             self.logger.error("Bad category id?! %s", category_id)
@@ -100,17 +114,19 @@ class BannerCog(Cog):
 
         for entry in raw_banners:
             if entry[:11] == "category://":
-                category_id = int(banner_[11:])
-
-            entry_mapping[category_id].append(entry)
+                category_id = int(entry[11:])
+            else:
+                entry_mapping[category_id].append(entry)
 
         if entry_mapping.pop(None, []):
             self.logger.warn("Found %s unreachable banner(s)!", len(banners))
 
         banners: Set[T] = set()
         await asyncio.gather(
-            self._alloc_banner(category_id, fields, banners)
-            for category_id, fields in entry_mapping.items()
+            *[
+                self._alloc_banner_slots(category_id, fields, banners)
+                for category_id, fields in entry_mapping.items()
+            ]
         )
 
         bucket: Deque[Tuple[int, T]] = deque([(1, banner) for banner in banners])

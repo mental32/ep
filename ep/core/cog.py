@@ -7,6 +7,8 @@ import hashlib
 import traceback
 from contextlib import suppress
 from functools import partial
+from re import compile as re_compile
+from itertools import cycle
 from inspect import iscoroutinefunction, getmembers, signature
 from typing import Type, Callable, Awaitable, Optional, Any, Coroutine
 
@@ -263,10 +265,14 @@ class Cog:
 
         def decorator(corofunc: CoroutineFunction):
             async def decorated(*args, **kwargs):
+                compiled_pattern = re_compile(pattern)
+
+                kwargs.update(dict(zip(compiled_pattern.groupindex, cycle([None]))))
+
                 bound = signature(corofunc).bind(*args, **kwargs)
 
                 try:
-                    content = bound["message"].content
+                    content = bound.arguments["message"].content
                 except KeyError:
                     for arg in bound.args:
                         if isinstance(arg, Message):
@@ -276,7 +282,7 @@ class Cog:
                         raise ValueError("could not infer message object for a regex match.")
 
                 loop = asyncio.get_event_loop()
-                match = loop.run_in_executor(None, partial(fullmatch, pattern, content))
+                match = await loop.run_in_executor(None, partial(compiled_pattern.fullmatch, content))
 
                 if match is None:
                     return  # XXX: Should we raise here?

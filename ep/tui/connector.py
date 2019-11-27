@@ -32,7 +32,7 @@ class BaseConnector(ABC):
 
     def update_widgets(self, data) -> None:
         for widget in self.window.widgets:
-            widget.update(data, self.config["ep"]["tui"])
+            widget.update(data, self.config.get("ep", {}).get("tui", {}))
 
     @abstractmethod
     async def exhaust(self):
