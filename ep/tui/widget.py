@@ -101,7 +101,7 @@ class Console(Widget):
             include = filters_t.get("include", [])
 
             formatters = {
-                "MESSAGE_CREATE": "{int(data_['channel_id'])!s} >> {data_['author']['username']}#{data_['author']['discriminator']} >> {data_['content']!r}"
+                "MESSAGE_CREATE": "({int(data_['channel_id'])!s} :: Channel), ({data_['author']['username']}#{data_['author']['discriminator']} :: Author) => {data_['content']!r}"
             }
 
             intersection_of = intersects
