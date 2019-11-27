@@ -68,16 +68,27 @@ class Console(AbstractWidget):
     msg_buf: Deque[str] = field(repr=False, init=False)
     inp_buf: Deque[str] = field(repr=False, init=False)
 
-    formatters = {
-        "MESSAGE_CREATE": (
-            "({int(data_['channel_id'])!s} :: Channel)"
-            ", ({data_['author']['username']}#{data_['author']['discriminator']} :: Author)"
-            " => {data_['content']!r}"),
-    }
+    @staticmethod
+    def _format_message_create(terminal, data):
+        base = (
+            f"({int(data['channel_id'])!s} :: Channel)"
+            f", ({data['author']['username']}#{data['author']['discriminator']} :: Author)"
+        )
+
+        if (len(base) * 100) // (terminal.width - 2) >= 50:
+            base = f"{data['author']['username']}#{data['author']['discriminator']}"
+
+        return base + f" => {data['content']!r}"
+
+    formatters = {}
 
     def __post_init__(self):
         self.inp_buf = deque(maxlen=512)
         self.msg_buf = deque(maxlen=512)
+
+        self.formatters.update({
+            "MESSAGE_CREATE": self._format_message_create
+        })
 
     def _eval_inp(self, source: str) -> None:
         pass
@@ -116,7 +127,13 @@ class Console(AbstractWidget):
                 for as_expected, group in ((False, exclude), (True, include))
                 for form in group
             ):
-                data = eval(f"f{self.formatters[type_]!r}", {}, {"data_": data_, "self": self})
+                formatter = self.formatters[type_]
+
+                if callable(formatter):
+                    data = formatter(self.terminal, data_)
+
+                elif isinstance(formatter, str):
+                    data = eval(f"f{formatter!r}", {}, {"data_": data_, "formatter": formatter})
 
         elif isinstance(payload, str):
             data = payload
@@ -135,7 +152,7 @@ class Console(AbstractWidget):
         height = term.height
 
         clobber = " " * (width - 2)
-        edge = (lambda rhs: min((width - 2, rhs)))
+        edge = lambda rhs: min((width - 2, rhs))
 
         for index, part in enumerate(reversed(self.msg_buf)):
             if index >= (height - 4):
@@ -146,7 +163,7 @@ class Console(AbstractWidget):
                     part = repr(part)
 
                 limit = edge(len(part))
-                print("".join(part[: limit]) + clobber[limit:], end="", flush=True)
+                print("".join(part[:limit]) + clobber[limit:], end="", flush=True)
 
         with term.location(0, term.height - 3):
             print("╠" + ("═" * (term.width - 2)) + "╣", end="", flush=True)
@@ -156,6 +173,6 @@ class Console(AbstractWidget):
 
             with term.location(1, term.height - 2):
                 limit = edge(len(self.inp_buf))
-                print("".join(self.inp_buf)[: limit], end="", flush=True)
+                print("".join(self.inp_buf)[:limit], end="", flush=True)
 
         self._dirty = True
