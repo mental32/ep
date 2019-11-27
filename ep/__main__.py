@@ -90,7 +90,7 @@ def main(**kwargs):
         print(Config.default)
         return
 
-    if "config_path" not in kwargs:
+    if kwargs["config_path"] is None:
         raise UsageError("Error: Missing option \"-c\" / \"--config-path\".")
 
     config_path = kwargs["config_path"]
