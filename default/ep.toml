@@ -5,7 +5,10 @@ socket_channel = 634044757328265225
 superusers = [633557681277239296, 431627389492264970]
 
 # `default` specific config values.
+[default]
 guild_snowflake = 633621230024523776
+guild_member_role = 633623354657472522
+guild_bot_role = 633624610272837642
 
 banners = [
     "category://633624313043353620",

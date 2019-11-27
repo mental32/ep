@@ -90,7 +90,7 @@ class BannerCog(Cog):
         self.logger.info("Starting guild banner task")
 
         try:
-            raw_banners = self.config["ep"]["banners"]
+            raw_banners = self.config["default"]["banners"]
         except KeyError:
             self.logger.error("No banners were found in the config!")
             return
