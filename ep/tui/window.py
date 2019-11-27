@@ -96,6 +96,9 @@ class Window:
 
         stdin, _ = await aioconsole.get_standard_streams()
 
+        print(terminal.clear)
+        self.render_frame()
+
         while True:
             t1 = self.loop.time()
 
@@ -105,9 +108,6 @@ class Window:
                 refresh_debt = 0.0
 
                 if any(widget.dirty for widget in self.widgets):
-                    print(terminal.clear)
-
-                    self.render_frame()
 
                     with terminal.location(terminal.width - 11, terminal.height - 2):
                         print(repr(self.loop.time() - t1)[:10], end="", flush=True)
