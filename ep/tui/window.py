@@ -96,11 +96,16 @@ class Window:
 
         stdin, _ = await aioconsole.get_standard_streams()
 
-        print(terminal.clear)
-        self.render_frame()
+        previous_resolution = (None, None)
 
         while True:
             await asyncio.sleep(0)
+
+            if previous_resolution != (terminal.width, terminal.heigh):
+                previous_resolution = (terminal.width, terminal.width)
+                refresh_debt = self.refresh_watermark
+                print(terminal.clear)
+                self.render_frame()
 
             if refresh_debt >= self.refresh_watermark:
                 refresh_debt = 0.0
