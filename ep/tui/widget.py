@@ -117,7 +117,11 @@ class Console(Widget):
             data = payload
 
         if data is not None:
-            self.msg_buf.append(data)
+            if isinstance(data, list):
+                self.msg_buf.extend(data)
+            else:
+                self.msg_buf.append(data)
+
             self._dirty = True
 
     def render(self) -> None:
