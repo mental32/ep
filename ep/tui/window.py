@@ -87,7 +87,7 @@ class Window:
     async def run_forever(self):
         from .widget import Console
 
-        self._connector.start(**self._connector_kwargs)
+        self._connector.refresh(**self._connector_kwargs)
 
         if not self._widgets:
             self._widgets.append(Console(root=self))

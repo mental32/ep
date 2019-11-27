@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from asyncio import AbstractEventLoop, Task, get_event_loop
 from dataclasses import dataclass, field
-from functools import partial
+from functools import partial, wraps
 from json import loads as json_loads
 from pickle import loads as pickle_loads
 from traceback import format_exc
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Coroutine, Callable
 
 import websockets
 from discord import Client, Message
@@ -25,7 +25,7 @@ class BaseConnector(ABC):
 
     __task: Optional[Task] = field(init=False, default=None)
 
-    def start(self, **kwargs) -> None:
+    def refresh(self, **kwargs) -> None:
         if self.__task is not None:
             self.__task.cancel()
 
@@ -55,41 +55,38 @@ class WebsocketConnector(BaseConnector):
                 self.update_widgets(data)
 
 
-class DiscordClientConnector(BaseConnector):
-    """
+@dataclass
+class DiscordClientConnector(BaseConnector, Client):
     """A :class:`discord.Client` based connector."""
 
-    __client = None
+    def __post_init__(self):
+        Client.__init__(self, loop=self.loop)
 
-    async def exhaust(self, token: str, config: "ep.Config"):
-        superusers = config["ep"]["superusers"]
+    # Event handlers
 
-        channel_id: int = config["ep"]["socket_channel"]
-        self.__client = client = Client()
+    async def on_connect(self) -> None:
+        self.update_widgets("Connected")
 
-        @client.event
-        async def on_connect() -> None:
-            self.update_widgets("Connected")
+    async def on_ready(self) -> None:
+        self.update_widgets("Ready")
 
-        @client.event
-        async def on_ready() -> None:
-            self.update_widgets("Ready")
-
-        @client.event
-        async def on_error(event, *args, **kwargs) -> None:
-            self.update_widgets((event, format_exc()))
-
-        @client.event
-        async def on_message(message: Message) -> None:
-            try:
-                if message.channel.id == channel_id:
-                    content = message.content[8:-3]
-                    data = json_loads(content)
-                    self.update_widgets(data)
-            except Exception as err:
-                self.update_widgets(repr(err))
-
+    async def on_message(self, message: Message) -> None:
         try:
-            await client.start(token, bot=False)
+            if message.channel.id == self.config["ep"]["socket_channel"]:
+                content = message.content[8:-3]
+                data = json_loads(content)
+                self.update_widgets(data)
+        except Exception:
+            for line in format_exc().split('\n'):
+                self.update_widgets(line)
+
+    async def on_error(self, event, *args, **kwargs) -> None:
+        self.update_widgets((event, format_exc()))
+
+    # Public api
+
+    async def exhaust(self, token: str):
+        try:
+            await self.start(token, bot=False)
         finally:
-            await client.logout()
+            await self.logout()
