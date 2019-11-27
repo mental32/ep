@@ -12,6 +12,7 @@ __all__ = ("Widget", "Console")
 class Widget(ABC):
     """
     """
+
     root: Union[Window, "Widget"]
     _dirty: bool = True
 
@@ -29,7 +30,7 @@ class Widget(ABC):
         return base.terminal
 
     @abstractmethod
-    def update(self, payload: Any) -> None:
+    def update(self, payload: Any, config: Dict) -> None:
         """
         """
 
@@ -70,7 +71,7 @@ class Console(Widget):
 
         self._dirty = True
 
-    def update(self, payload: Any) -> None:
+    def update(self, payload: Any, config: Dict) -> None:
         data: Optional[str] = None
 
         if isinstance(payload, dict) and set(payload) == {"d", "t", "s", "op"} and payload["op"] == 0:

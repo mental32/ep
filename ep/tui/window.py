@@ -31,9 +31,9 @@ class Window:
     refresh_delay: float = 0.1
     refresh_watermark: float = 0.2
 
-    def __init__(self, connector_klass: BaseConnector, connector_kwargs: Dict[Any, Any]) -> None:
+    def __init__(self, connector_klass: BaseConnector, config: "ep.Config", connector_kwargs: Dict[Any, Any]) -> None:
         self.loop = loop = asyncio.get_event_loop()
-        self._connector = connector_klass(self, loop)
+        self._connector = connector_klass(window=self, loop=loop, config=config)
         self._connector_kwargs = connector_kwargs
         self._terminal = Terminal()
         self._widgets: List["Widget"] = []

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from asyncio import AbstractEventLoop, Task
+from asyncio import AbstractEventLoop, Task, get_event_loop
 from dataclasses import dataclass, field
 from functools import partial
 from json import loads as json_loads
@@ -20,19 +20,20 @@ class BaseConnector(ABC):
     """
     """
     window: "ep.tui.Window"
-    loop: AbstractEventLoop
+    config: "ep.Config"
+    loop: AbstractEventLoop = field(default_factory=get_event_loop)
 
-    _task: Optional[Task] = field(init=False, default=None)
+    __task: Optional[Task] = field(init=False, default=None)
 
     def start(self, **kwargs) -> None:
-        if self._task is not None:
-            self._task.cancel()
+        if self.__task is not None:
+            self.__task.cancel()
 
-        self._task = self.loop.create_task(self.exhaust(**kwargs))
+        self.__task = self.loop.create_task(self.exhaust(**kwargs))
 
     def update_widgets(self, data) -> None:
         for widget in self.window.widgets:
-            widget.update(data)
+            widget.update(data, self.config["ep"]["tui"])
 
     @abstractmethod
     async def exhaust(self):
@@ -41,12 +42,11 @@ class BaseConnector(ABC):
 
 
 class WebsocketConnector(BaseConnector):
-    """
-    """
+    """A websocket based connector."""
 
     __socket = None
 
-    async def exhaust(self, uri: str, config: "ep.Config"):
+    async def exhaust(self, uri: str):
         async with websockets.connect(uri) as websocket:
             self.__socket = websocket
 
@@ -57,7 +57,7 @@ class WebsocketConnector(BaseConnector):
 
 class DiscordClientConnector(BaseConnector):
     """
-    """
+    """A :class:`discord.Client` based connector."""
 
     __client = None
 
