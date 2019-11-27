@@ -60,8 +60,7 @@ class Widget(ABC):
 
 @dataclass
 class Console(Widget):
-    """
-    """
+    """A widget representing a view and an input."""
 
     msg_buf: Deque[str] = field(repr=False, init=False)
     inp_buf: Deque[str] = field(repr=False, init=False)

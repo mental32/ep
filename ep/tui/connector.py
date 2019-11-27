@@ -17,8 +17,7 @@ __all__ = ("BaseConnector", "DiscordClientConnector", "WebsocketConnector", "Ind
 
 @dataclass
 class BaseConnector(ABC):
-    """
-    """
+    """Base class for all connectors."""
     window: "ep.tui.Window"
     config: "ep.Config"
     loop: AbstractEventLoop = field(default_factory=get_event_loop)
@@ -37,8 +36,7 @@ class BaseConnector(ABC):
 
     @abstractmethod
     async def exhaust(self):
-        """
-        """
+        """Exhaust the connector."""
 
 
 class WebsocketConnector(BaseConnector):
