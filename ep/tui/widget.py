@@ -63,6 +63,13 @@ class Console(AbstractWidget):
     msg_buf: Deque[str] = field(repr=False, init=False)
     inp_buf: Deque[str] = field(repr=False, init=False)
 
+    formatters = {
+        "MESSAGE_CREATE": (
+            "({int(data_['channel_id'])!s} :: Channel)"
+            ", ({data_['author']['username']}#{data_['author']['discriminator']} :: Author)"
+            " => {data_['content']!r}"),
+    }
+
     def __post_init__(self):
         self.inp_buf = deque(maxlen=512)
         self.msg_buf = deque(maxlen=512)
@@ -97,18 +104,14 @@ class Console(AbstractWidget):
             exclude = filters_t.get("exclude", [])
             include = filters_t.get("include", [])
 
-            formatters = {
-                "MESSAGE_CREATE": "({int(data_['channel_id'])!s} :: Channel), ({data_['author']['username']}#{data_['author']['discriminator']} :: Author) => {data_['content']!r}"
-            }
-
             intersection_of = intersects
 
-            if type_ in formatters and all(
+            if type_ in self.formatters and all(
                 intersection_of(form, data_) is as_expected
                 for as_expected, group in ((False, exclude), (True, include))
                 for form in group
             ):
-                data = eval(f"f{formatters[type_]!r}", {}, {"data_": data_})
+                data = eval(f"f{self.formatters[type_]!r}", {}, {"data_": data_, "self": self})
 
         elif isinstance(payload, str):
             data = payload
