@@ -5,7 +5,7 @@ from functools import partial, wraps
 from json import loads as json_loads
 from pickle import loads as pickle_loads
 from traceback import format_exc
-from typing import TYPE_CHECKING, Any, Optional, Coroutine, Callable
+from typing import TYPE_CHECKING, Any, Optional, Coroutine, Callable, Union
 
 import websockets
 from discord import Client, Message
@@ -13,7 +13,7 @@ from discord import Client, Message
 if TYPE_CHECKING:
     import ep
 
-__all__ = ("BaseConnector", "DiscordClientConnector", "WebsocketConnector")
+__all__ = ("BaseConnector", "DiscordClientConnector", "WebsocketConnector", "IndependantConnector")
 
 @dataclass
 class BaseConnector(ABC):
@@ -90,3 +90,16 @@ class DiscordClientConnector(BaseConnector, Client):
             await self.start(token, bot=False)
         finally:
             await self.logout()
+
+
+class IndependantConnector(DiscordClientConnector):
+    """A :class:`discord.Client` based connector that focuses on its own raw socket responses."""
+
+    async def on_message(self, message: Message) -> None:
+        return None  # dummy overload
+
+    async def on_socket_response(self, payload: Union[Any, bytes]) -> None:
+        if isinstance(payload, bytes) or not self.is_ready():
+            return
+
+        self.update_widgets(payload)

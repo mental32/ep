@@ -4,9 +4,11 @@ import sys
 from functools import partial
 from asyncio import run as await_
 from pathlib import Path
+from typing import List
 
-from toml import loads as toml_loads
 import click
+from click import UsageError
+from toml import loads as toml_loads
 
 from ep import (
     Client,
@@ -17,7 +19,7 @@ from ep import (
     get_logger,
     infer_token,
 )
-from ep.tui import start as tui_start, DiscordClientConnector, WebsocketConnector
+from ep.tui import start as tui_start, DiscordClientConnector, WebsocketConnector, IndependantConnector
 
 _PROBING_PREDICATE = {
     # Check if another client instance is already running locally.
@@ -27,7 +29,6 @@ _PROBING_PREDICATE = {
             and ({"uri": f"ws://{addr}:{port}"} if probe(addr, port) else None)
         )
     ): partial(tui_start, WebsocketConnector),
-
     # Check across discord if another client instance is running.
     (
         lambda config, _: (
@@ -39,10 +40,33 @@ _PROBING_PREDICATE = {
 }
 
 
+class Mutex(click.Option):
+    def __init__(self, *args, not_required_if: List[str], **kwargs):
+        self.others = others = not_required_if
+
+        help_ = kwargs.get("help", "")
+        kwargs["help"] = f"{help_} Option is mutally exclusive with {', '.join(others)}."
+
+        super(Mutex, self).__init__(*args, **kwargs)
+
+    def handle_parse_result(self, ctx, opts, args):
+        current_opt: bool = self.name in opts
+
+        for opt in self.others:
+            if opt in opts:
+                if current_opt:
+                    raise UsageError(f"Illegal usage: `{self.name}` is mutually exclusive with {mutex_opt}.")
+                else:
+                    self.prompt = None
+
+        return super(Mutex, self).handle_parse_result(ctx, opts, args)
+
+
 # Process arguments
 @click.command()
-@click.option("-c", "--config-path", type=Path, required=True)
+@click.option("-c", "--config-path", cls=Mutex, type=Path, not_required_if=["client"])
 @click.option("-C", "--generate-config", is_flag=True)
+@click.option("-l", "--client", cls=Mutex, is_flag=True, not_required_if=["config_path"])
 @click.option("--probe", is_flag=True)
 @click.option("--disable", is_flag=True)
 @click.option("--port", type=int, default=WebsocketServer.port)
@@ -52,9 +76,22 @@ _PROBING_PREDICATE = {
 @click.option("--socket-emit", type=bool, default=None)
 @click.option("--cogpath", type=Path, default=None)
 def main(**kwargs):
+    if kwargs["client"]:
+        return await_(
+            tui_start(
+                IndependantConnector,
+                config=Config({"ep": {"tui": {}}}, repr(None)),
+                token=infer_token(),
+            )
+        )
+
+
     if kwargs["generate_config"]:
         print(Config.default)
         return
+
+    if "config_path" not in kwargs:
+        raise UsageError("Error: Missing option \"-c\" / \"--config-path\".")
 
     config_path = kwargs["config_path"]
     if not config_path.exists():
