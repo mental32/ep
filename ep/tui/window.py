@@ -110,11 +110,10 @@ class Window:
             if refresh_debt >= self.refresh_watermark:
                 refresh_debt = 0.0
 
-                if any(widget.dirty for widget in self.widgets):
-
+                assert self._widgets
+                if self._widgets[-1].dirty:  # Current connector model dirties all widgets at once.
                     for widget in self.widgets:
-                        if widget.dirty:
-                            widget.render()
+                        widget.render()
 
             with suppress(asyncio.TimeoutError):
                 char = await asyncio.wait_for(stdin.read(1), timeout=self.refresh_delay)
