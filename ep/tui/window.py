@@ -100,17 +100,12 @@ class Window:
         self.render_frame()
 
         while True:
-            t1 = self.loop.time()
-
             await asyncio.sleep(0)
 
             if refresh_debt >= self.refresh_watermark:
                 refresh_debt = 0.0
 
                 if any(widget.dirty for widget in self.widgets):
-
-                    with terminal.location(terminal.width - 11, terminal.height - 2):
-                        print(repr(self.loop.time() - t1)[:10], end="", flush=True)
 
                     for widget in self.widgets:
                         if widget.dirty:
