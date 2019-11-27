@@ -1,11 +1,24 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Union, List, Deque
+from typing import Any, Union, List, Deque, Dict, TypeVar, TYPE_CHECKING
 
 from . import Window
 
+
+K = TypeVar("K")
+V = TypeVar("V")
+
 __all__ = ("Widget", "Console")
+
+
+def intersects(sub: Dict[K, V], dom: [K, V]) -> bool:
+    if not isinstance(sub, dict):
+        return sub == dom
+
+    return all(
+        (key in dom and intersects(value, dom[key])) for key, value in sub.items()
+    )
 
 
 @dataclass
@@ -61,10 +74,10 @@ class Console(Widget):
         pass
 
     def stdinp(self, char):
-        if char in (b'\r', b'\n'):
+        if char in (b"\r", b"\n"):
             self._eval_inp("".join(self.inp_buf))
             self.inp_buf.clear()
-        elif char in (b'\x7f', b'\b') and self.inp_buf:
+        elif char in (b"\x7f", b"\b") and self.inp_buf:
             self.inp_buf.pop()
         else:
             self.inp_buf.append(char.decode())
@@ -74,11 +87,31 @@ class Console(Widget):
     def update(self, payload: Any, config: Dict) -> None:
         data: Optional[str] = None
 
-        if isinstance(payload, dict) and set(payload) == {"d", "t", "s", "op"} and payload["op"] == 0:
-            d, t = payload["d"], payload["t"]
+        if (
+            isinstance(payload, dict)
+            and set(payload) == {"d", "t", "s", "op"}
+            and payload["op"] == 0
+        ):
+            data_, type_ = payload["d"], payload["t"]
 
-            if t == "MESSAGE_CREATE":
-                data = f"{d['channel_id']!r} >> {d['author']['username']}#{d['author']['discriminator']} >> {d['content']!r}"
+            filters = config.get("filters", {})
+            filters_t = filters.get(type_, {})
+
+            exclude = filters_t.get("exclude", [])
+            include = filters_t.get("include", [])
+
+            formatters = {
+                "MESSAGE_CREATE": "{data_['channel_id']!r} >> {data_['author']['username']}#{data_['author']['discriminator']} >> {data_['content']!r}"
+            }
+
+            intersection_of = intersects
+
+            if type_ in formatters and all(
+                intersection_of(form, data_) is as_expected
+                for as_expected, group in ((False, exclude), (True, include))
+                for form in group
+            ):
+                data = eval(f"f{formatters[type_]!r}", {}, {"data_": data_})
 
         elif isinstance(payload, str):
             data = payload
@@ -100,11 +133,11 @@ class Console(Widget):
                 if not isinstance(part, str):
                     part = repr(part)
 
-                fmt = part[:width - 3]
-                print(fmt, end='', flush=True)
+                fmt = part[: width - 3]
+                print(fmt, end="", flush=True)
 
         with term.location(0, term.height - 3):
-            print('╠' + ('═' * (term.width - 2)) + '╣', end="", flush=True)
+            print("╠" + ("═" * (term.width - 2)) + "╣", end="", flush=True)
 
         with term.location(1, term.height - 2):
             print("".join(self.inp_buf)[:width], end="", flush=True)
