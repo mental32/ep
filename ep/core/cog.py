@@ -288,10 +288,11 @@ class Cog:
                     return  # XXX: Should we raise here?
 
                 group_dict = match.groupdict()
+                group_kwargs = {}
                 annotations = corofunc.__annotations__
 
                 if group_dict and annotations:
-                    group_kwargs = group_dict.copy()
+                    group_kwargs.update(group_dict.copy())
 
                     for group_name, group_value in group_dict.items():
                         if group_name in annotations:
