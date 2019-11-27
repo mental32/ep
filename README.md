@@ -22,10 +22,7 @@ usefull for some other projects.
 
 ### Ping!
 
-First we have to generate a configuration file. We can do this easily with:
- - `ep -C > foo.ep.toml`
-
-Now lets write our cog, here we're creating the file `./cogs/ping.py`:
+First lets write our cog, here we're creating the file `./cogs/ping.py` (create the `cogs` directory if you haven't already):
 
 ```py
 # ./cogs/ping.py
@@ -41,12 +38,17 @@ class Ping(Cog):
         await message.channel.send('Pong!')
 ```
 
+Now we have to generate a configuration file. We can do this easily with:
+
+ - `ep -C > ./cogs/foo.ep.toml`
+
+
 Then set the discord token, this is done as an environment variable:
 
  - `export DISCORD_TOKEN="YOUR_TOKEN_HERE"`
 
 The bot can now be run with:
- - `ep -c foo.ep.toml`
+ - `ep -c ./cogs/foo.ep.toml`
 
 ### Events
 
