@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Union, List, Deque, Dict, TypeVar, TYPE_CHECKING
+from functools import partial
+from typing import Any, Union, List, Deque, Dict, TypeVar, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ep.tui import Window
 
 
 K = TypeVar("K")
@@ -10,7 +14,8 @@ V = TypeVar("V")
 __all__ = ("AbstractWidget", "Console")
 
 
-def intersects(sub: Dict[K, V], dom: [K, V]) -> bool:
+def intersects(sub: Dict[str, Any], dom: [str, Any]) -> bool:
+    """Recursively assert sub intersects dom."""
     if not isinstance(sub, dict):
         return sub == dom
 
@@ -46,12 +51,12 @@ class AbstractWidget(ABC):
         """
 
     @abstractmethod
-    async def render(self) -> None:
+    def render(self) -> None:
         """
         """
 
     @abstractmethod
-    async def stdinp(self, key: bytes) -> None:
+    def stdinp(self, key: bytes) -> None:
         """
         """
 
@@ -129,6 +134,9 @@ class Console(AbstractWidget):
         width = term.width
         height = term.height
 
+        clobber = " " * (width - 2)
+        edge = (lambda rhs: min((width - 2, rhs)))
+
         for index, part in enumerate(reversed(self.msg_buf)):
             if index >= (height - 4):
                 break
@@ -137,13 +145,17 @@ class Console(AbstractWidget):
                 if not isinstance(part, str):
                     part = repr(part)
 
-                fmt = part[: width - 3]
-                print(fmt, end="", flush=True)
+                limit = edge(len(part))
+                print("".join(part[: limit]) + clobber[limit:], end="", flush=True)
 
         with term.location(0, term.height - 3):
             print("╠" + ("═" * (term.width - 2)) + "╣", end="", flush=True)
 
         with term.location(1, term.height - 2):
-            print("".join(self.inp_buf)[:width], end="", flush=True)
+            print(clobber)
+
+            with term.location(1, term.height - 2):
+                limit = edge(len(self.inp_buf))
+                print("".join(self.inp_buf)[: limit], end="", flush=True)
 
         self._dirty = True

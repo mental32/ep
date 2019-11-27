@@ -55,7 +55,10 @@ class Mutex(click.Option):
         for opt in self.others:
             if opt in opts:
                 if current_opt:
-                    raise UsageError(f"Illegal usage: `{self.name}` is mutually exclusive with {mutex_opt}.")
+                    raise UsageError((
+                        f"Illegal usage: `{self.name}`"
+                        f" is mutually exclusive with {opt}."
+                    ))
                 else:
                     self.prompt = None
 

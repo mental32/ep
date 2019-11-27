@@ -6,7 +6,7 @@ import tty
 import traceback
 from functools import partial
 from contextlib import suppress, contextmanager
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Type
 
 import aioconsole
 from blessings import Terminal
@@ -32,7 +32,7 @@ class Window:
     refresh_delay: float = 0.1
     refresh_watermark: float = 0.2
 
-    def __init__(self, connector_klass: BaseConnector, config: "ep.Config", connector_kwargs: Dict[Any, Any]) -> None:
+    def __init__(self, connector_klass: Type[BaseConnector], config: "ep.Config", connector_kwargs: Dict[Any, Any]) -> None:
         self.loop = loop = asyncio.get_event_loop()
         self._connector = connector_klass(window=self, loop=loop, config=config)
         self._connector_kwargs = connector_kwargs
