@@ -126,10 +126,13 @@ class Captcha(Cog):
         task = self.client.schedule_task(flow.start())
 
         def remove_flow(future: Future) -> None:
-            self.flows.pop(flow, None)
-            future.result()  # Propagate exceptions
-            self.logger.info("Successfully completed captcha auth flow for %s adding roles: %s", str(member), repr(self.member_role))
-            self.client.schedule_task(member.add_roles(self.member_role))
+            try:
+                future.result()  # Propagates any exceptions
+            finally:
+                self.flows.pop(flow, None)
+            else:
+                self.logger.info("Successfully completed captcha auth flow for %s adding roles: %s", str(member), repr(self.member_role))
+                self.client.schedule_task(member.add_roles(self.member_role))
 
         task.add_done_callback(remove_flow)
 
@@ -139,5 +142,5 @@ class Captcha(Cog):
     @Cog.wait_until_ready
     async def role_bot(self, member: Member) -> None:
         """Callback that gives bots the bot role."""
-        assert member.bot
+        assert member.bot, "Wait...something really bad just happened."
         await member.add_roles(self.bot_role)
