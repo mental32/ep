@@ -8,7 +8,7 @@ from pathlib import Path
 from random import choice
 from string import ascii_letters, digits
 from tempfile import mkstemp
-from typing import Tuple, ClassVar, Set, Dict
+from typing import Tuple, ClassVar, Set, Dict, Optional
 
 from captcha.image import ImageCaptcha
 from discord import Member, Message, Role, File, Embed, Invite
@@ -62,7 +62,7 @@ class CaptchaFlow:
         invite_fmt: str = f" if you'd like to rejoin use {invite}." if invite is not None else "."
 
         try:
-            while message.content != secret: and (message := await wait_for("message")):
+            while message.content != secret and (message := await wait_for("message")):
                 self.done = True
         except TimeoutError:
             await self.member.send(self._TIMED_OUT + invite_fmt)
@@ -131,9 +131,9 @@ class Captcha(Cog):
                 future.result()  # Propagates any exceptions
             finally:
                 self.flows.pop(flow, None)
-            else:
-                self.logger.info("Successfully completed captcha auth flow for %s adding roles: %s", str(member), repr(self.member_role))
-                self.client.schedule_task(member.add_roles(self.member_role))
+
+            self.logger.info("Successfully completed captcha auth flow for %s adding roles: %s", str(member), repr(self.member_role))
+            self.client.schedule_task(member.add_roles(self.member_role))
 
         task.add_done_callback(remove_flow)
 
