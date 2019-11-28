@@ -98,6 +98,7 @@ class BannerCog(Cog):
             return
 
         for index in range(len(fields) - len(category.voice_channels)):
+            self.logger.info("%s - Allocating banner %s", category_id, index)
             await category.create_voice_channel(name=f"Allocating banner {index}")
 
         for fmt, channel in zip(fields, category.voice_channels):

@@ -128,7 +128,7 @@ class Captcha(Cog):
         def remove_flow(future: Future) -> None:
             self.flows.pop(flow, None)
             future.result()  # Propagate exceptions
-            self.logger.info("Successfully completed captcha auth flow for %s", str(member))
+            self.logger.info("Successfully completed captcha auth flow for %s adding roles: %s", str(member), repr(self.member_role))
             self.client.schedule_task(member.add_roles(self.member_role))
 
         task.add_done_callback(remove_flow)
