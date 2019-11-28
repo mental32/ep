@@ -66,13 +66,14 @@ class TextBanner:
         # legal f-string syntax ready for immediate evalutaion
         return eval(f"f{template!r}", {}, locals)
 
-    async def action(self, cog: Cog) -> None:
+    async def action(self, cog: Cog) -> "Banner":
         locals = {
             "guild": self.channel.guild,
             "now": datetime.now(),
         }
 
         await self.channel.edit(name=self.eval_template(self.template, locals=locals))
+        return self
 
 
 @Cog.export
@@ -123,7 +124,7 @@ class BannerCog(Cog):
         coros = [self._alloc_banner_slots(*args, banners) for args in entry_mapping.items()]
         await gather(*coros)
 
-        bucket: Deque[Tuple[int, T]] = deque([(1, banner) for banner in banners])
+        bucket: Set[Tuple[int, T]] = {(1, banner) for banner in banners}
 
         delay = 1
         while True:
@@ -133,16 +134,18 @@ class BannerCog(Cog):
                 continue
 
             for _ in range(len(bucket)):
-                interval, banner = bucket.popleft()
+                interval, banner = bucket.pop()
 
                 if (delta := (interval - delay)) > 0:
-                    bucket.append((interval - delay, banner))
+                    bucket.add((delta, banner))
                     continue
 
                 task = self.client.schedule_task(banner.action(cog=self))
 
-                def reschedule_banner_action(_) -> None:
-                    bucket.append((banner.interval, banner))
+                def reschedule_banner_action(fut: Future) -> None:
+                    banner = fut.result()
+                    assert isinstance(banner, TextBanner), (banner, fut)
+                    bucket.add((banner.interval, banner))
 
                 task.add_done_callback(reschedule_banner_action)
 
