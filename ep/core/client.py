@@ -78,15 +78,13 @@ class Client(ClientBase):
     # Properties
 
     @property
-    def config(self):
-        return self._config
+    def ready(self):
+        """ :class:`bool`- same as ``Client.is_ready()`` just as a property."""
+        return self.is_ready()
 
     @property
-    def whitelist(self):
-        """List[:class:`int`] - A list of whitelisted channel ids"""
-        if "whitelist" in self.config["ep"]:
-            return self.config["ep"]["whitelist"]
-        return []
+    def config(self):
+        return self._config
 
     # Internals
 
@@ -123,8 +121,6 @@ class Client(ClientBase):
         if not cogs.exists():
             raise FileNotFoundError("Ru'roh the cogs directory doesn't seem to exist!")
 
-        disabled_cogs = self._config["ep"].get("disabled-cogs", [])
-
         try:
             sys.path.append(str(cogs))
 
@@ -138,16 +134,15 @@ class Client(ClientBase):
                 else:
                     name = path.name
 
-                if path.name not in disabled_cogs:
-                    module = importlib.import_module(name)
+                module = importlib.import_module(name)
 
-                    for _, obj in inspect.getmembers(module):
-                        if (
-                            isinstance(obj, type)
-                            and issubclass(obj, Cog)
-                            and getattr(obj, "__export__", False)
-                        ):
-                            self.add_cog(obj(self))
+                for _, obj in inspect.getmembers(module):
+                    if (
+                        isinstance(obj, type)
+                        and issubclass(obj, Cog)
+                        and getattr(obj, "__export__", False)
+                    ):
+                        self.add_cog(obj(self))
         finally:
             sys.path.remove(str(cogs))
 
