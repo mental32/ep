@@ -40,7 +40,7 @@ class TextBanner:
     channel: VoiceChannel
     interval: Union[int, float] = 60.0
 
-    _NONE_CHANNEL_ERR = "could not get channel channel_id={channel_id}"
+    _previous: Optional[str] = field(init=False, default=None)
 
     def __hash__(self):
         return hash(self.channel)
@@ -72,7 +72,13 @@ class TextBanner:
             "now": datetime.now(),
         }
 
-        await self.channel.edit(name=self.eval_template(self.template, locals=locals))
+        evaluated = self.eval_template(self.template, locals=locals)
+
+        if evaluated != self._previous:
+            await self.channel.edit(name=evaluated)
+
+        self._previous = evaluated
+
         return self
 
 
