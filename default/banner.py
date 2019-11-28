@@ -1,25 +1,27 @@
+"""Use VoiceChannel's grouped by Categories as output for some configuration."""
+
 from asyncio import Future, gather, sleep
 from dataclasses import dataclass, field
 from datetime import datetime
-from collections import deque, defaultdict
-from functools import partial
+from collections import defaultdict
+from itertools import chain, starmap, cycle
 from typing import (
+    Tuple,
     Dict,
-    Coroutine,
     Union,
-    Any,
     Optional,
-    Dict,
-    Union,
     List,
     Set,
     TypeVar,
+    DefaultDict
 )
 
 from discord import VoiceChannel
 from ep.core import Cog
 
 _STALLING: str = "Stalling for 60 seconds, websocket seems to be closed."
+
+T = TypeVar("T")  # pylint: disable=invalid-name
 
 
 @dataclass
@@ -46,33 +48,35 @@ class TextBanner:
         return hash(self.channel)
 
     @staticmethod
-    def eval_template(template: str, *, locals: Optional[Dict] = None) -> str:
-        """Evaluate a template for a given set of locals.
+    def eval_template(template: str, *, locals_: Optional[Dict] = None) -> str:
+        """Evaluate a template for a given set of locals_.
 
         Parameters
         ----------
         template : :class:`str`
             The template to evaluate.
-        locals : Optional[:class:`collections.abc.Mapping`]
+        locals_ : Optional[:class:`collections.abc.Mapping`]
             The locals to use, None of none provided.
         """
         assert isinstance(template, str)
 
-        if locals is None:
-            locals = {}
+        if locals_ is None:
+            locals_ = {}
 
         # repr(str) produces quotes around the output
         # prefix an `f` and you'll end up with perfectly
         # legal f-string syntax ready for immediate evalutaion
-        return eval(f"f{template!r}", {}, locals)
+        return eval(f"f{template!r}", {}, locals_)  # pylint: disable=eval-used
 
     async def action(self, cog: Cog) -> "Banner":
-        locals = {
+        """Edit the surrogate channels name with the evaluated template."""
+        locals_ = {
+            "cog": cog,
             "guild": self.channel.guild,
             "now": datetime.now(),
         }
 
-        evaluated = self.eval_template(self.template, locals=locals)
+        evaluated = self.eval_template(self.template, locals_=locals_)
 
         if evaluated != self._previous:
             await self.channel.edit(name=evaluated)
@@ -84,13 +88,30 @@ class TextBanner:
 
 @Cog.export
 class BannerCog(Cog):
-    T = TypeVar("T")
-
     klass: T = TextBanner
 
+    graph: DefaultDict[int, List[str]]
+
+    def __post_init__(self):
+        raw: List[str] = self.config["default"].get("banners", [])
+
+        entry_mapping: DefaultDict[int, List[str]] = defaultdict(list)
+        category_id: int = 0
+
+        for entry in raw:
+            if entry[:11] == "category://":
+                category_id = int(entry[11:])
+            else:
+                entry_mapping[category_id].append(entry)
+
+        if garbage := entry_mapping.pop(0, []):
+            self.logger.warn("Found %s unreachable banner(s)!", len(garbage))
+
+        self.graph = entry_mapping
+
     async def _alloc_banner_slots(
-        self, category_id: int, fields: List[str], bucket: Set[T]
-    ) -> None:
+        self, category_id: int, fields: List[str]
+    ) -> Set[T]:
         category = self.client.get_channel(category_id)
 
         if category is None:
@@ -101,37 +122,21 @@ class BannerCog(Cog):
             self.logger.info("%s - Allocating banner %s", category_id, index)
             await category.create_voice_channel(name=f"Allocating banner {index}")
 
-        for fmt, channel in zip(fields, category.voice_channels):
-            bucket.add(self.klass(template=fmt, channel=channel))
+        return {
+            self.klass(template=fmt, channel=channel)
+            for fmt, channel in zip(fields, category.voice_channels)
+        }
 
     @Cog.task
     @Cog.wait_until_ready
-    async def guild_banner(self) -> None:
+    async def _guild_banner_task(self) -> None:
         self.logger.info("Starting guild banner task")
 
-        try:
-            raw_banners = self.config["default"]["banners"]
-        except KeyError:
-            self.logger.error("No banners were found in the config!")
-            return
+        gathered = await gather(*starmap(self._alloc_banner_slots, self.graph.items()))
 
-        entry_mapping = defaultdict(list)
-        category_id: Optional[str] = None
+        bucket: Set[Tuple[int, T]] = set(zip(cycle([1]), chain.from_iterable(gathered)))
 
-        for entry in raw_banners:
-            if entry[:11] == "category://":
-                category_id = int(entry[11:])
-            else:
-                entry_mapping[category_id].append(entry)
-
-        if entry_mapping.pop(None, []):
-            self.logger.warn("Found %s unreachable banner(s)!", len(banners))
-
-        banners: Set[T] = set()
-        coros = [self._alloc_banner_slots(*args, banners) for args in entry_mapping.items()]
-        await gather(*coros)
-
-        bucket: Set[Tuple[int, T]] = {(1, banner) for banner in banners}
+        del gathered
 
         delay = 1
         while True:

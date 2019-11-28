@@ -11,7 +11,7 @@ from tempfile import mkstemp
 from typing import Tuple, ClassVar, Set, Dict
 
 from captcha.image import ImageCaptcha
-from discord import Member, Message, Role, File, Embed
+from discord import Member, Message, Role, File, Embed, Invite
 from ep import Cog, Client
 
 ASCII: str = ascii_letters + digits
@@ -27,6 +27,8 @@ class CaptchaFlow:
 
     __captcha: ClassVar[ImageCaptcha] = ImageCaptcha()
 
+    _TIMED_OUT: str = "You've been timed out. I've had to remove you from the guild."
+
     def __hash__(self):
         return hash(self.member)
 
@@ -41,7 +43,7 @@ class CaptchaFlow:
 
         return Path(filepath), secret
 
-    async def start(self):
+    async def start(self, invite: Optional[Invite] = None):
         """Begin the captcha flow for a given :class:`discord.Member`."""
         path, secret = await self.client.loop.run_in_executor(None, self.generate)
 
@@ -51,21 +53,21 @@ class CaptchaFlow:
         embed = Embed(title="Captcha flow")
         embed.set_image(url=f"attachment://{path.name!s}")
 
-        await self.member.send(file=file, embed=embed)
+        message = await self.member.send(file=file, embed=embed)
 
         def check(message: Message) -> bool:
-            return message.author == self.member and message.guild is None
+            return message.author == self.member
 
-        while True:
-            try:
-                message = await self.client.wait_for("message", check=check, timeout=300)
-            except TimeoutError:
-                path.unlink()
-                return await self.start()
+        wait_for = partial(self.client.wait_for, check=check, timeout=300)
+        invite_fmt: str = f" if you'd like to rejoin use {invite}." if invite is not None else "."
 
-            if message.content == secret:
+        try:
+            while message.content != secret: and (message := await wait_for("message")):
                 self.done = True
-                break
+        except TimeoutError:
+            await self.member.send(self._TIMED_OUT + invite_fmt)
+        finally:
+            path.unlink()
 
 
 @Cog.export
@@ -112,7 +114,6 @@ class Captcha(Cog):
         if (pair := self.flows.pop(member.id, None)) is not None:
             flow, task = pair
             task.cancel()
-            await flow.member.send("The captcha has been invalidated since you've left the guild.")
 
     @Cog.event(tp="on_member_join", member_bot=False)
     @Cog.wait_until_ready
