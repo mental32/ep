@@ -1,10 +1,6 @@
-import abc
-import asyncio
-import datetime
-import time
-import traceback
-from abc import ABC
-from dataclasses import dataclass
+from asyncio import Future, gather, sleep
+from dataclasses import dataclass, field
+from datetime import datetime
 from collections import deque, defaultdict
 from functools import partial
 from typing import (
@@ -22,6 +18,8 @@ from typing import (
 
 from discord import VoiceChannel
 from ep.core import Cog
+
+_STALLING: str = "Stalling for 60 seconds, websocket seems to be closed."
 
 
 @dataclass
@@ -71,7 +69,7 @@ class TextBanner:
     async def action(self, cog: Cog) -> None:
         locals = {
             "guild": self.channel.guild,
-            "now": datetime.datetime.now(),
+            "now": datetime.now(),
         }
 
         await self.channel.edit(name=self.eval_template(self.template, locals=locals))
@@ -122,29 +120,32 @@ class BannerCog(Cog):
             self.logger.warn("Found %s unreachable banner(s)!", len(banners))
 
         banners: Set[T] = set()
-        await asyncio.gather(
-            *[
-                self._alloc_banner_slots(category_id, fields, banners)
-                for category_id, fields in entry_mapping.items()
-            ]
-        )
+        coros = [self._alloc_banner_slots(*args, banners) for args in entry_mapping.items()]
+        await gather(*coros)
 
         bucket: Deque[Tuple[int, T]] = deque([(1, banner) for banner in banners])
 
         delay = 1
-        while not self.client.is_closed():
+        while True:
+            if self.client.is_closed():
+                await sleep(60)
+                self.logger.warn(_STALLING)
+                continue
+
             for _ in range(len(bucket)):
                 interval, banner = bucket.popleft()
 
-                if interval != 1:
+                if (delta := (interval - delay)) > 0:
                     bucket.append((interval - delay, banner))
                     continue
 
-                task = self.client.schedule_task(banner.action(self))
+                task = self.client.schedule_task(banner.action(cog=self))
 
                 def reschedule_banner_action(_) -> None:
                     bucket.append((banner.interval, banner))
 
                 task.add_done_callback(reschedule_banner_action)
 
-            await asyncio.sleep(delay)
+            await sleep(delay)
+
+        self.logger.info("Banner task stopped")
