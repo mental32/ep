@@ -56,6 +56,12 @@ class ClientBase(Client):
         for event_ in self.extra_events.get(fmt, []):
             self._schedule_event(event_, fmt, *args, **kwargs)
 
+    async def close(self):
+        await super().close()
+
+        for cog_name in list(self.cogs):
+            self.remove_cog(cog_name)
+
     # Public
 
     def schedule_task(self, coro: Coroutine, *, name: Optional[str] = None) -> Task:
