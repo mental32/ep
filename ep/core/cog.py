@@ -115,7 +115,7 @@ async def _decorated_regex(
 
             for name in {*group_dict}.intersection({*annotations}):
                 argument_annotation = annotations[name]
-                argument = group_name[name]
+                argument = group_dict[name]
 
                 # TODO: Unions, Tuples, ...
 
