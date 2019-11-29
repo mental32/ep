@@ -28,30 +28,31 @@ from ep.tui import (
 
 __all__ = ("Mutex", "main")
 
+# fmt: off
+def _ws_probe(_: Config, kwargs: Dict) -> Optional[Dict[str, Any]]:
+    """Check if another client instance is already running locally."""
+    if probe(addr := kwargs["addr"], port := kwargs["port"]):
+        return {"uri": f"ws://{addr}:{port}"}
+
+    return None
+
+def _http_probe(config: Config, _: Dict) -> Optional[Dict[str, Any]]:
+    """Check across discord if another client instance is running."""
+    token = infer_token()
+
+    if await_(http_probe(token)):
+        return {"token": token}
+
+    return None
+
 _PROBING_PREDICATE = {
-    # Check if another client instance is already running locally.
-    (
-        lambda _, kwargs: (
-            (addr := kwargs["addr"], port := kwargs["port"])
-            and ({"uri": f"ws://{addr}:{port}"} if probe(addr, port) else None)
-        )
-    ): partial(tui_start, WebsocketConnector),
-    # Check across discord if another client instance is running.
-    (
-        lambda config, _: (
-            {"token": token}
-            if await_(http_probe((token := infer_token()), config))
-            else None
-        )
-    ): partial(tui_start, DiscordClientConnector),
+    _probe: partial(tui_start, WebsocketConnector),
+    _http_probe: partial(tui_start, DiscordClientConnector),
 }
 
-_STANDALONE_CLIENT = partial(
-    tui_start, IndependantConnector, config=Config({"ep": {"tui": {}}}, fp=repr(None))
-)
+_STANDALONE_CLIENT = partial(tui_start, IndependantConnector, config=Config({"ep": {"tui": {}}}, fp=repr(None)))
 
 
-# fmt: off
 class Mutex(click.Option):
     def __init__(self, *args, not_required_if: List[str], **kwargs):
         self.others = others = not_required_if
