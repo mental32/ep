@@ -19,7 +19,14 @@ from ep import (
     get_logger,
     infer_token,
 )
-from ep.tui import start as tui_start, DiscordClientConnector, WebsocketConnector, IndependantConnector
+from ep.tui import (
+    start as tui_start,
+    DiscordClientConnector,
+    WebsocketConnector,
+    IndependantConnector,
+)
+
+__all__ = ("Mutex", "main")
 
 _PROBING_PREDICATE = {
     # Check if another client instance is already running locally.
@@ -39,7 +46,12 @@ _PROBING_PREDICATE = {
     ): partial(tui_start, DiscordClientConnector),
 }
 
+_STANDALONE_CLIENT = partial(
+    tui_start, IndependantConnector, config=Config({"ep": {"tui": {}}}, fp=repr(None))
+)
 
+
+# fmt: off
 class Mutex(click.Option):
     def __init__(self, *args, not_required_if: List[str], **kwargs):
         self.others = others = not_required_if
@@ -50,17 +62,14 @@ class Mutex(click.Option):
         super(Mutex, self).__init__(*args, **kwargs)
 
     def handle_parse_result(self, ctx, opts, args):
-        current_opt: bool = self.name in opts
+        prompt, self.prompt = self.prompt, None
 
-        for opt in self.others:
-            if opt in opts:
-                if current_opt:
-                    raise UsageError((
-                        f"Illegal usage: `{self.name}`"
-                        f" is mutually exclusive with {opt}."
-                    ))
-                else:
-                    self.prompt = None
+        if (name := self.name) in opts and any((opt := opt_) in opts for opt_ in self.others):
+            self.prompt = prompt
+            raise UsageError((
+                f"Illegal usage: `{name}`"
+                f" is mutually exclusive with {opt}."
+            ))
 
         return super(Mutex, self).handle_parse_result(ctx, opts, args)
 
@@ -78,23 +87,16 @@ class Mutex(click.Option):
 @click.option("--socket-channel", type=str, default=None)
 @click.option("--socket-emit", type=bool, default=None)
 @click.option("--cogpath", type=Path, default=None)
-def main(**kwargs):
+def main(**kwargs):  # fmt: on
     if kwargs["client"]:
-        return await_(
-            tui_start(
-                IndependantConnector,
-                config=Config({"ep": {"tui": {}}}, repr(None)),
-                token=infer_token(),
-            )
-        )
-
+        return await_(_STANDALONE_CLIENT(token=infer_token()))
 
     if kwargs["generate_config"]:
         print(Config.default)
         return
 
     if kwargs["config_path"] is None:
-        raise UsageError("Error: Missing option \"-c\" / \"--config-path\".")
+        raise UsageError('Error: Missing option "-c" / "--config-path".')
 
     config_path = kwargs["config_path"]
     if not config_path.exists():
