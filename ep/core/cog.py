@@ -1,22 +1,61 @@
+"""Cog implementation"""
 import asyncio
 import ast
 import functools
 import inspect
 import os
 import hashlib
-import traceback
-from contextlib import suppress
-from functools import partial
-from re import compile as re_compile
+from sys import stderr
+from asyncio import Task
+from functools import partial, wraps
+from re import compile as re_compile, Pattern, Match
 from itertools import cycle
+from string import Template
 from inspect import iscoroutinefunction, getmembers, signature
-from typing import Type, Callable, Awaitable, Optional, Any, Coroutine
+from typing import (
+    Type,
+    List,
+    Callable,
+    Awaitable,
+    Optional,
+    Any,
+    Coroutine,
+    Dict,
+    Tuple,
+    Union,
+)
+
+from discord import Message
 
 __all__ = ("Cog",)
 
 CoroutineFunction = Callable[..., Coroutine]
+RegexPattern = Union[str, Pattern]
 
-def _event(corofunc: CoroutineFunction, event_type: str = "", inject: Optional[Callable[[CoroutineFunction], CoroutineFunction]] = None) -> CoroutineFunction:
+
+LITERAL_TYPES = (
+    int,
+    float,
+    list,
+    tuple,
+    dict,
+    set,
+    frozenset,
+)
+
+
+def _event(
+    corofunc: CoroutineFunction,
+    event_type: str = "",
+    inject: Optional[Callable[[CoroutineFunction], CoroutineFunction]] = None,
+) -> CoroutineFunction:
+    if (
+        not iscoroutinefunction(corofunc)
+        or isinstance(corofunc, partial)
+        and not iscoroutinefunction(corofunc.func)
+    ):
+        raise TypeError("`corofunc` must be a coroutine function.")
+
     if not event_type:
         event_type = corofunc.__name__
 
@@ -31,6 +70,70 @@ def _event(corofunc: CoroutineFunction, event_type: str = "", inject: Optional[C
     _corofunc.__event_listener__ = event_type
 
     return _corofunc
+
+
+async def _decorated_regex(
+    pattern: Pattern,
+    corofunc: Callable,
+    filter_: Union[Callable[[Match], bool], bool, None] = (lambda match: match is None),
+    *,
+    args,
+    kwargs,
+) -> Any:
+    kwargs.update(dict(zip(pattern.groupindex, cycle([None]))))
+
+    bound = signature(corofunc).bind(*args, **kwargs)
+
+    try:
+        content = bound.arguments["message"].content
+    except KeyError:
+        for arg in bound.args:
+            if isinstance(arg, Message):
+                content = arg.content
+                break
+        else:
+            raise ValueError(
+                "could not infer message object (needed for a regex match.)"
+            )
+
+    filter_ = {
+        None: (lambda match: match is None),
+        True: (lambda _: True),
+        False: (lambda _: False),
+    }.get(filter_, filter_)
+
+    loop = asyncio.get_event_loop()
+    match = await loop.run_in_executor(None, partial(pattern.fullmatch, content))
+
+    if filter_(match):
+        return  # TODO: Should we raise here?
+
+    if match is not None:
+        group_dict = match.groupdict()
+        annotations = corofunc.__annotations__
+
+        kwargs_ = {}
+
+        if group_dict and annotations:
+            kwargs_.update(group_dict.copy())
+
+            for name in {*group_dict}.intersection({*annotations}):
+                argument_annotation = annotations[name]
+                argument = group_name[name]
+
+                # TODO: Unions, Tuples, ...
+
+                if argument_annotation in LITERAL_TYPES:
+                    try:
+                        value = ast.literal_eval(argument)
+                    except ValueError:
+                        value = argument
+
+                    kwargs_[name] = value
+
+        kwargs.update(kwargs_)
+
+    return await corofunc(*args, **kwargs)
 
 
 class Cog:
@@ -78,6 +181,7 @@ class Cog:
 
     @staticmethod
     def export(klass: Optional[Type["Cog"]] = None, **flags):
+        """Mark a Cog class to be automatically exported when the module is loaded."""
         if klass is None:
 
             def decorator(klass: Type["Cog"]):
@@ -109,7 +213,9 @@ class Cog:
         return corofunc
 
     @staticmethod
-    def wait_until_ready(corofunc: Callable[..., Awaitable]) -> Callable[..., Awaitable]:
+    def wait_until_ready(
+        corofunc: Callable[..., Awaitable]
+    ) -> Callable[..., Awaitable]:
         """Block until the bot is ready.
 
         This is the same as sticking a ``await bot.wait_until_ready()`` at the
@@ -161,7 +267,9 @@ class Cog:
         return decorator
 
     @staticmethod
-    def event(_corofunc: Optional[CoroutineFunction] = None, *, tp: str = "", **attrs: Any):
+    def event(
+        _corofunc: Optional[CoroutineFunction] = None, *, tp: str = "", **attrs: Any
+    ):  # pylint: disable=invalid-name
         """Mark a coroutine function as an event listener.
 
         >>> @Cog.event
@@ -202,7 +310,10 @@ class Cog:
         if attrs:
 
             def decorate(corofunc: CoroutineFunction):
-                sig = signature(corofunc)
+                if isinstance(corofunc, partial):
+                    sig = signature(corofunc.func)
+                else:
+                    sig = signature(corofunc)
 
                 async def dyn(*args, **kwargs):
                     nonlocal sig, attrs
@@ -212,7 +323,7 @@ class Cog:
 
                     # Pre-invokation predicates
                     for target, expected in attrs.items():
-                        head, *tail = target.split('_')
+                        head, *tail = target.split("_")
 
                         try:
                             base = bound_sig.arguments[head]
@@ -230,7 +341,9 @@ class Cog:
                             return
 
                     return await corofunc(*args, **kwargs)
+
                 return _event(corofunc, event_type=tp, inject=(lambda _: dyn))
+
             return decorate
 
         if tp:
@@ -239,12 +352,12 @@ class Cog:
         return _event
 
     @staticmethod
-    def regex(pattern: str, **attrs: Any):
+    def regex(pattern: RegexPattern, *, filter_: Union[bool, None, Callable[[Match], bool]] = None, **attrs: Any):
         """Regex based message content parsing.
 
         Parameters
         ----------
-        pattern : :class:`str`
+        pattern : :class:`RegexPattern`
             The regex pattern to match against
         **attrs : Any
             Further attrs to pass into :func:`event`
@@ -261,87 +374,107 @@ class Cog:
             This is raised if the message object could not be found.
         """
         assert "_corofunc" not in attrs
-        wrapped = __class__.event(tp="on_message", **attrs)
+        wrapped = Cog.event(tp="on_message", **attrs)
+        kwargs_ = {
+            "filter_": filter_,
+            "pattern": re_compile(pattern)
+            if not isinstance(pattern, Pattern)
+            else pattern
+        }
 
         def decorator(corofunc: CoroutineFunction):
+            kwargs["corofunc"] = corofunc
+
             async def decorated(*args, **kwargs):
-                compiled_pattern = re_compile(pattern)
+                kwargs["args"] = args
+                kwargs["kwargs"] = kwargs
+                return await _decorated_regex(**kwargs_)
 
-                kwargs.update(dict(zip(compiled_pattern.groupindex, cycle([None]))))
-
-                bound = signature(corofunc).bind(*args, **kwargs)
-
-                try:
-                    content = bound.arguments["message"].content
-                except KeyError:
-                    for arg in bound.args:
-                        if isinstance(arg, Message):
-                            content = arg.content
-                            break
-                    else:
-                        raise ValueError("could not infer message object for a regex match.")
-
-                loop = asyncio.get_event_loop()
-                match = await loop.run_in_executor(None, partial(compiled_pattern.fullmatch, content))
-
-                if match is None:
-                    return  # XXX: Should we raise here?
-
-                group_dict = match.groupdict()
-                group_kwargs = {}
-                annotations = corofunc.__annotations__
-
-                if group_dict and annotations:
-                    group_kwargs.update(group_dict.copy())
-
-                    for group_name, group_value in group_dict.items():
-                        if group_name in annotations:
-                            value_annotation = annotations[group_name]
-
-                            # TODO: Unions, Tuples, ...
-
-                            if value_annotation in (int, float, list, tuple, dict, set, frozenset):
-                                try:
-                                    value = ast.literal_eval(group_value)
-                                except ValueError:
-                                    value = group_value
-                                    # value = eval(f"{value_annotation.__name__}({group_value})", {}, {})
-
-                                group_kwargs[group_name] = value
-
-                kwargs.update(group_kwargs)
-                return await corofunc(*args, **kwargs)
             return wrapped(decorated)
+
+        return decorator
+
+    @staticmethod
+    def formatted_regex(
+        formatter: Callable[["ep.Client"], Dict[str, Any]],
+        pattern: RegexPattern,
+        filter_: Union[bool, None, Callable[[Match], bool]] = None,
+        **attrs,
+    ) -> Callable:
+        """Like :meth:`Cog.regex` but lazilly formats the pattern using the provided formatter.
+
+        Conceptually its the same as :meth:`Cog.regex` but where it differs is
+        the pattern used is ``pattern.format(**formatter(client))``
+
+        Patterns
+        --------
+        formatter : Callable[[:class:`ep.Client`], Dict[str, Any]]
+            The formatter to use.
+        pattern : :class:`str`
+            The pattern to format.
+        attrs : Any
+            Any subsequent attrs to filter against, see :meth:`Cog.event`
+        """
+        assert "_corofunc" not in attrs
+        wrapped = Cog.event(tp="on_message", **attrs)
+
+        if not isinstance(pattern, str):
+            raise TypeError("Bad pattern.")
+
+        kwargs_ = {"filter_": filter_}
+
+        def decorator(corofunc: CoroutineFunction):
+            kwargs_["corofunc"] = corofunc
+
+            @wraps(corofunc)
+            async def decorated(*args, **kwargs):
+                bound = signature(corofunc).bind(*args, **kwargs)
+                assert "self" in bound.arguments
+
+                template = Template(pattern)
+                fmt = template.substitute(formatter(bound.arguments["self"].client))
+                compiled_pattern = re_compile(fmt)
+
+                kwargs_.update(
+                    {"pattern": compiled_pattern, "args": args, "kwargs": kwargs}
+                )
+
+                return await _decorated_regex(**kwargs_)
+
+            return wrapped(decorated)
+
         return decorator
 
     # Properties
 
     @property
-    def cog_tasks(self):
+    def cog_tasks(self) -> List[Task]:
+        """List[:class:`asyncio.Task`] - The tasks associated with this cog."""
         return []
 
     # Special methods
 
     def cog_unload(self):
-        pass
+        """A method that is called when a cog is unloaded."""
 
     # Creation hooks
 
     def cog_inject(self, client):
-        disabled = self.config["disabled"]
+        """An initializer that is called when the client is loading the cog."""
+        disabled = self.config.get("disabled", False)
 
         for name, method_name in self.__cog_listeners__:
             client.add_listener(getattr(self, method_name), name)
 
         for _, obj in inspect.getmembers(self):
-            if getattr(obj, "__schedule_task__", False):
-                if not disabled:
-                    client.logger.info("Scheduling task: %s", repr(obj))
-                    client.schedule_task(obj())
+            if not disabled and getattr(obj, "__schedule_task__", False):
+                client.logger.info("Scheduling task: %s", repr(obj))
+                client.schedule_task(obj())
 
         return self
 
     def cog_eject(self, client):
+        """A destructor that is called when the client is unloading the cog."""
         try:
             for _, method_name in self.__cog_listeners__:
                 client.remove_listener(getattr(self, method_name))
