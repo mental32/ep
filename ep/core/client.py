@@ -17,6 +17,7 @@ from discord.ext.commands import Paginator
 
 from .cog import Cog
 from .base import ClientBase
+from .websocket import WebsocketServer
 from ..config import Config
 from ..utils import codeblock, infer_token
 
@@ -64,7 +65,8 @@ class Client(ClientBase):
 
         self.run = partial(self.run, infer_token(cleanup=cleanup))
 
-        # self.runtime_exector = episcript.RuntimeExector()
+        self._wss = wss = WebsocketServer(self)
+        self.schedule_task(wss.serve())
 
     def __enter__(self):
         self._timestamp = int(time.time())
@@ -85,6 +87,11 @@ class Client(ClientBase):
     @property
     def config(self):
         return self._config
+
+    @property
+    def wss(self):
+        """:class:`ep.WebsocketServer` - The current websocket server."""
+        return self._wss
 
     # Internals
 
