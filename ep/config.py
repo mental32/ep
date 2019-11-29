@@ -3,7 +3,10 @@ from typing import Dict, Union, Any
 
 from toml import loads as toml_loads
 
-_DEFAULT: str = """
+__all__ = ("RAW_DEFAULT", "Config")
+
+RAW_DEFAULT: str = """
+# "ep" is the main configuration loading point, it's form is standardised.
 [ep]
 # When a "cogpath" is specified ep will attempt to import python modules
 # in the directory specified by the "cogpath" variable.
@@ -23,6 +26,10 @@ socket_emit = true
 # users when the TUI connects through discord directly.
 # 
 superusers = []
+
+# "tui" is used as the sub configuration for the TUI control panel.
+[ep.tui]
+
 """.strip()
 
 
@@ -35,7 +42,7 @@ class Config(dict):
         The default toml configuration.
     """
 
-    default: str = _DEFAULT
+    default: str = RAW_DEFAULT
 
     def __init__(self, *args, fp: Path, **kwargs) -> None:
         super().__init__(*args, **kwargs)
