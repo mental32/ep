@@ -60,11 +60,8 @@ async def http_probe(token: str, config: "ep.Config") -> bool:
 
         channel = await http.get_channel(channel_id)
 
-        if "topic" in channel:
-            topic = channel["topic"]
-
-            if topic is not None and topic == "alive":
-                return True
+        if channel.get("topic", "") == "alive":
+            return True
     finally:
         await http.close()
 

@@ -6,7 +6,8 @@ import inspect
 import os
 import hashlib
 from sys import stderr
-from asyncio import Task
+from asyncio import Task, iscoroutinefunction
+from dataclasses import dataclass, field
 from functools import partial, wraps
 from re import compile as re_compile, Pattern, Match
 from itertools import cycle
@@ -49,10 +50,8 @@ def _event(
     event_type: str = "",
     inject: Optional[Callable[[CoroutineFunction], CoroutineFunction]] = None,
 ) -> CoroutineFunction:
-    if (
-        not iscoroutinefunction(corofunc)
-        or isinstance(corofunc, partial)
-        and not iscoroutinefunction(corofunc.func)
+    if not iscoroutinefunction(corofunc) or (
+        isinstance(corofunc, partial) and not iscoroutinefunction(corofunc.func)
     ):
         raise TypeError("`corofunc` must be a coroutine function.")
 
@@ -72,6 +71,7 @@ def _event(
     return _corofunc
 
 
+# fmt: off
 async def _decorated_regex(
     pattern: Pattern,
     corofunc: Callable,
@@ -80,6 +80,7 @@ async def _decorated_regex(
     args,
     kwargs,
 ) -> Any:
+    # Named groups in a pattern have the potential to be arguments in the signiture
     kwargs.update(dict(zip(pattern.groupindex, cycle([None]))))
 
     bound = signature(corofunc).bind(*args, **kwargs)
@@ -87,14 +88,8 @@ async def _decorated_regex(
     try:
         content = bound.arguments["message"].content
     except KeyError:
-        for arg in bound.args:
-            if isinstance(arg, Message):
-                content = arg.content
-                break
-        else:
-            raise ValueError(
-                "could not infer message object (needed for a regex match.)"
-            )
+        if not any(isinstance(arg, Message) and (content := arg.content) for arg in bound.args):
+            raise ValueError("could not infer message object (needed for a regex match.)")
 
     filter_ = {
         None: (lambda match: match is None),
@@ -104,6 +99,7 @@ async def _decorated_regex(
 
     loop = asyncio.get_event_loop()
     match = await loop.run_in_executor(None, partial(pattern.fullmatch, content))
+    del loop
 
     if filter_(match):
         return  # TODO: Should we raise here?
@@ -134,6 +130,7 @@ async def _decorated_regex(
         kwargs.update(kwargs_)
 
     return await corofunc(*args, **kwargs)
+# fmt: on
 
 
 class Cog:
@@ -141,8 +138,19 @@ class Cog:
 
     Attributes
     ----------
-    client : :class:`BaseClient`
-        The bot instance the cog belongs too.
+    client : :class:`ep.core.BaseClient`
+        The client instance the cog belongs too.
+    config : :class:`ep.Config`
+        The current configuration.
+    loop : :class:`asyncio.AbstractEventLoop`
+        The current event loop.
+
+    Special attributes
+    ------------------
+    __cog_listeners__ : List[:class:`types.MethodTypes`]
+        The currently regsitered listeners.
+    __cog_name__ : :class:`str`
+        The name of the cog.
     """
 
     def __init__(self, client: "BaseClient"):
@@ -172,29 +180,56 @@ class Cog:
         self.__post_init__()
 
     def __post_init__(self):
-        pass
+        """Overloadable method that deals with processing after the standard ``__init__`` is called."""
 
     def __repr__(self):
         return f"<Cog name={type(self).__name__!r}>"
 
+    # Special methods
+
+    def cog_unload(self):
+        """A method that is called when a cog is unloaded."""
+
+    ## Creation hooks
+
+    def cog_inject(self, client):
+        """An initializer that is called when the client is loading the cog."""
+        disabled = self.config.get("disabled", False)
+
+        for name, method_name in self.__cog_listeners__:
+            client.add_listener(getattr(self, method_name), name)
+
+        for _, obj in inspect.getmembers(self):
+            if not disabled and getattr(obj, "__schedule_task__", False):
+                client.logger.info("Scheduling task: %s", repr(obj))
+                client.schedule_task(obj())
+
+        return self
+
+    def cog_eject(self, client):
+        """A destructor that is called when the client is unloading the cog."""
+        try:
+            for _, method_name in self.__cog_listeners__:
+                client.remove_listener(getattr(self, method_name))
+        finally:
+            self.cog_unload()
+
+    # Properties
+
+    @property
+    def cog_tasks(self) -> List[Task]:
+        """List[:class:`asyncio.Task`] - The tasks associated with this cog."""
+        return []
+
     # staticmethods
 
     @staticmethod
-    def export(klass: Optional[Type["Cog"]] = None, **flags):
+    def export(klass: Optional[Type["Cog"]]):
         """Mark a Cog class to be automatically exported when the module is loaded."""
-        if klass is None:
-
-            def decorator(klass: Type["Cog"]):
-                klass.__export__ = True
-                klass.__export_flags__ = flags
-
-            return decorator
-
         if not isinstance(klass, type) and issubclass(klass, Cog):
-            raise TypeError()
+            raise TypeError("``klass`` must be a type that subclasses ``Cog``.")
 
         klass.__export__ = True
-        klass.__export_flags__ = ()
         return klass
 
     @staticmethod
@@ -236,8 +271,10 @@ class Cog:
         return decorated
 
     @staticmethod
-    def wait_for_envvar(envvar: str) -> Callable[[Callable[..., Any]], Callable]:
-        """Produce a decorator that will block execution of a coroutine until an envvar is seen.
+    def wait_for_envvar(
+        envvar: str, delay: Union[int, float] = 1
+    ) -> Callable[[Callable[..., Any]], Callable]:
+        """Produce a decorator that will stall the invokation of a coroutine function until an envvar is seen.
 
         Parameters
         ----------
@@ -249,17 +286,17 @@ class Cog:
             if not asyncio.iscoroutinefunction(corofunc):
                 raise TypeError("target function must be a coroutine function.")
 
-            @functools.wraps(corofunc)
+            @wraps(corofunc)
             async def decorated(*args, **kwargs) -> Any:
                 while True:
                     try:
                         value = os.environ[envvar]
                     except KeyError:
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(delay)
                     else:
+                        kwargs[envvar] = value
                         break
 
-                args = (*args, value)
                 return await corofunc(*args, **kwargs)
 
             return decorated
@@ -311,15 +348,16 @@ class Cog:
 
             def decorate(corofunc: CoroutineFunction):
                 if isinstance(corofunc, partial):
-                    sig = signature(corofunc.func)
+                    signature_ = signature(corofunc.func)
                 else:
-                    sig = signature(corofunc)
+                    signature_ = signature(corofunc)
 
-                async def dyn(*args, **kwargs):
-                    nonlocal sig, attrs
+                @wraps(corofunc)
+                async def decorated(*args, **kwargs):
+                    nonlocal signature_, attrs
 
                     # Bind the signature over the current arguments
-                    bound_sig = sig.bind(*args, **kwargs)
+                    bound_sig = signature_.bind(*args, **kwargs)
 
                     # Pre-invokation predicates
                     for target, expected in attrs.items():
@@ -342,18 +380,36 @@ class Cog:
 
                     return await corofunc(*args, **kwargs)
 
-                return _event(corofunc, event_type=tp, inject=(lambda _: dyn))
+                return _event(corofunc, event_type=tp, inject=(lambda _: decorated))
 
             return decorate
 
         if tp:
             return partial(_event, event_type=tp)
 
-        return _event
+        raise ValueError(
+            "Must supply at least one of: ``tp``, ``attrs``, or a coroutine function."
+        )
 
     @staticmethod
-    def regex(pattern: RegexPattern, *, filter_: Union[bool, None, Callable[[Match], bool]] = None, **attrs: Any):
+    def regex(
+        pattern: RegexPattern,
+        *,
+        filter_: Union[bool, None, Callable[[Match], bool]] = None,
+        **attrs: Any,
+    ):
         """Regex based message content parsing.
+
+        >>> @Cog.regex(r"!ping")
+        ... async def pong(self, message: discord.Message) -> None:
+        ...     await message.channel.send("Pong!")
+
+        Is semantically equivelant to:
+
+        >>> @Cog.event(tp="on_message")
+        ... async def pong(self, message: discord.Message) -> None:
+        ...     if re.fullmatch(r"!ping", message.content) is not None:
+        ...         await ctx.message.send("Pong!")
 
         Parameters
         ----------
@@ -444,39 +500,3 @@ class Cog:
             return wrapped(decorated)
 
         return decorator
-
-    # Properties
-
-    @property
-    def cog_tasks(self) -> List[Task]:
-        """List[:class:`asyncio.Task`] - The tasks associated with this cog."""
-        return []
-
-    # Special methods
-
-    def cog_unload(self):
-        """A method that is called when a cog is unloaded."""
-
-    # Creation hooks
-
-    def cog_inject(self, client):
-        """An initializer that is called when the client is loading the cog."""
-        disabled = self.config.get("disabled", False)
-
-        for name, method_name in self.__cog_listeners__:
-            client.add_listener(getattr(self, method_name), name)
-
-        for _, obj in inspect.getmembers(self):
-            if not disabled and getattr(obj, "__schedule_task__", False):
-                client.logger.info("Scheduling task: %s", repr(obj))
-                client.schedule_task(obj())
-
-        return self
-
-    def cog_eject(self, client):
-        """A destructor that is called when the client is unloading the cog."""
-        try:
-            for _, method_name in self.__cog_listeners__:
-                client.remove_listener(getattr(self, method_name))
-        finally:
-            self.cog_unload()
