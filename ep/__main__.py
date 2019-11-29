@@ -4,7 +4,7 @@ import sys
 from functools import partial
 from asyncio import run as await_
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Any, Optional
 
 import click
 from click import UsageError
@@ -46,7 +46,7 @@ def _http_probe(config: Config, _: Dict) -> Optional[Dict[str, Any]]:
     return None
 
 _PROBING_PREDICATE = {
-    _probe: partial(tui_start, WebsocketConnector),
+    _ws_probe: partial(tui_start, WebsocketConnector),
     _http_probe: partial(tui_start, DiscordClientConnector),
 }
 
