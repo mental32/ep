@@ -439,11 +439,11 @@ class Cog:
         }
 
         def decorator(corofunc: CoroutineFunction):
-            kwargs["corofunc"] = corofunc
+            kwargs_["corofunc"] = corofunc
 
             async def decorated(*args, **kwargs):
-                kwargs["args"] = args
-                kwargs["kwargs"] = kwargs
+                kwargs_["args"] = args
+                kwargs_["kwargs"] = kwargs
                 return await _decorated_regex(**kwargs_)
 
             return wrapped(decorated)
