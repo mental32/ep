@@ -8,8 +8,8 @@ if TYPE_CHECKING:
     from ep.tui import Window
 
 
-K = TypeVar("K")
-V = TypeVar("V")
+K = TypeVar("K")  # pylint: disable=invalid-name
+V = TypeVar("V")  # pylint: disable=invalid-name
 
 __all__ = ("AbstractWidget", "Console")
 

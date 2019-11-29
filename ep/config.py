@@ -26,7 +26,7 @@ superusers = []
 """.strip()
 
 
-class Config:
+class Config(dict):
     """A class that deals with configuration issues.
 
     Attributes
@@ -37,15 +37,9 @@ class Config:
 
     default: str = _DEFAULT
 
-    def __init__(self, data: Dict, fp: Path) -> None:
+    def __init__(self, *args, fp: Path, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.fp = fp
-        self.data = data
-
-    def __getitem__(self, key: Any) -> Any:
-        return self.data[key]
-
-    def __setitem__(self, key: Any, value: Any) -> None:
-        self.data[key] = value
 
     # Constructors
 

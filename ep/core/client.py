@@ -1,19 +1,17 @@
+"""Main client implementation."""
 import asyncio
 import os
 import sys
-import json
 import time
-import pathlib
 import inspect
 import importlib
+from pathlib import Path
+from json import dumps as json_dumps
+from time import time
 from functools import partial
 from typing import Union, Any, Optional
 
-import discord
 from discord import TextChannel
-from discord.ext.commands import Paginator
-
-# from episcript import EpiScriptRuntime
 
 from .cog import Cog
 from .base import ClientBase
@@ -43,11 +41,9 @@ class Client(ClientBase):
         or the timestamp of when the class was created.
     """
 
-    _timestamp: int = int(time.time())
+    _timestamp: int = int(time())
 
-    def __init__(
-        self, *args, config: Config, disable: bool = False, **kwargs
-    ) -> None:
+    def __init__(self, *args, config: Config, disable: bool = False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.__socket_noloop = set()
@@ -57,24 +53,24 @@ class Client(ClientBase):
             self.load_cogs(config.fp.parent.joinpath(self._config["ep"]["cogpath"]))
 
         if disable or "EP_DISABLED" in os.environ:
-            self.run = (lambda *_, **__: None)
+            self.run = lambda *_, **__: None
             return
 
-        def cleanup():
+        def close_http():
             self.loop.run_until_complete(self.http.close())
 
-        self.run = partial(self.run, infer_token(cleanup=cleanup))
+        self.run = partial(self.run, infer_token(cleanup=close_http))
 
         self._wss = wss = WebsocketServer(self)
         self.schedule_task(wss.serve())
 
     def __enter__(self):
-        self._timestamp = int(time.time())
+        self._timestamp = int(time())
         return self
 
     def __exit__(self, *_, **__):
         self.logger.info(
-            "Ran for %s seconds, Exiting...", int(time.time()) - self._timestamp
+            "Ran for %s seconds, Exiting...", int(time()) - self._timestamp
         )
 
     # Properties
@@ -86,6 +82,7 @@ class Client(ClientBase):
 
     @property
     def config(self):
+        """:class:`ep.Config` - The current client configuration."""
         return self._config
 
     @property
@@ -96,34 +93,37 @@ class Client(ClientBase):
     # Internals
 
     def get_socket_channel(self) -> Optional[TextChannel]:
+        """Return the :class:`discord.TextChannel` for a "socket_channel" id in the config."""
         try:
             channel_id = self._config["ep"]["socket_channel"]
         except KeyError:
-            self.logger.warn("`socket_channel` option not present in configuration!")
+            self.logger.warning("`socket_channel` option not present in configuration!")
             return None
 
         channel = self.get_channel(channel_id)
 
         if channel is None:
-            self.logger.error("`socket_channel` could not be found! %s", repr(channel_id))
+            self.logger.error(
+                "`socket_channel` could not be found! %s", repr(channel_id)
+            )
             return None
 
         return channel
 
     # Public
 
-    def load_cogs(self, path: pathlib.Path) -> None:
+    def load_cogs(self, cog_path: Path) -> None:
         """Load cogs from a given :class:`pathlib.Path`.
 
         Parameters
         ----------
-        path : :class:`pathlib.Path`
+        cog_path : :class:`pathlib.Path`
             The path to load the cogs from.
         """
-        if not isinstance(path, pathlib.Path):
-            raise TypeError()
+        if not isinstance(cog_path, Path):
+            raise TypeError("`cog_path` must be an instance of pathlib.Path.")
 
-        cogs = path.resolve().absolute()
+        cogs = cog_path.resolve().absolute()
 
         if not cogs.exists():
             raise FileNotFoundError("Ru'roh the cogs directory doesn't seem to exist!")
@@ -132,12 +132,12 @@ class Client(ClientBase):
             sys.path.append(str(cogs))
 
             for path in cogs.iterdir():
+                path = path.resolve().absolute()
 
-                if path.resolve().is_file():
-                    if not path.name.endswith(".py"):
-                        continue
-                    else:
-                        name = path.name[:-3]
+                if (is_file := path.is_file()) and path.name.endswith(".py"):
+                    name = path.name[:-3]
+                elif is_file:
+                    continue
                 else:
                     name = path.name
 
@@ -153,41 +153,29 @@ class Client(ClientBase):
         finally:
             sys.path.remove(str(cogs))
 
-    async def process_message(self, message: discord.Message) -> None:
-        """Given a :class:`discord.Message` attempt to invoke a command
-
-        Parameters
-        ----------
-        message : :class:`discord.Message`
-            The discord message to process.
-        """
-        _locals = _globals = None
-        content = message.content
-
-        async with self.runtime_exector.exec(content, _locals, _globals) as rv:
-            pass
-
     # Event handlers
 
-    async def on_message(self, message: discord.Message) -> None:
-        if message.channel in self.whitelist:
-            await self.process_message(message)
+    async def on_connect(self) -> None:  # pylint: disable=missing-function-docstring
+        self.logger.info("Connected")
 
-    async def on_ready(self) -> None:
-        await super().on_ready()
+    async def on_ready(self) -> None:  # pylint: disable=missing-function-docstring
+        self.logger.info("Ready")
 
-        channel = self.get_socket_channel()
+        if (
+            self._config["ep"]["socket_emit"]
+            and (channel := self.get_socket_channel()) is not None
+        ):
+            await channel.edit(topic="alive")
 
-        if channel is None:
+    async def on_socket_response(self, message: Union[Any, bytes]) -> None:  # pylint: disable=missing-function-docstring
+        if (
+            not self._config["ep"]["socket_emit"]
+            or isinstance(message, bytes)
+            or not self.is_ready()
+        ):
             return
 
-        await channel.edit(topic="alive")
-
-    async def on_socket_response(self, message: Union[Any, bytes]) -> None:
-        if isinstance(message, bytes) or not self._config["ep"]["socket_emit"] or not self.is_ready():
-            return
-
-        await super().on_socket_response(message)
+        await self.wss.broadcast(message)
 
         channel = self.get_socket_channel()
 
@@ -196,18 +184,22 @@ class Client(ClientBase):
 
         await asyncio.sleep(1)
 
-        if message['t'] == 'MESSAGE_CREATE' and int(message['d']['id']) in self.__socket_noloop:
-            return self.__socket_noloop.remove(int(message['d']['id']))
+        if (
+            message["t"] == "MESSAGE_CREATE"
+            and (message_id := int(message["d"]["id"])) in self.__socket_noloop
+        ):
+            self.__socket_noloop.remove(message_id)
+            return
 
-        data = json.dumps(message)
+        data = json_dumps(message)
 
         if len(data) >= 1900:
             return  # TODO: Impl paging objects
 
         try:
-            resp = await channel.send(codeblock(data, style="json"))
+            message = await channel.send(codeblock(data, style="json"))
         except Exception as err:
             self.logger.error(err)
             raise
         else:
-            self.__socket_noloop.add(resp.id)
+            self.__socket_noloop.add(message.id)
