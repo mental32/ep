@@ -13,6 +13,8 @@ guild_snowflake = 633621230024523776
 guild_member_role = 633623354657472522
 guild_bot_role = 633624610272837642
 
+valid_vcs = ["github.com", "gitlab.com"]
+
 banners = [
     "category://633624313043353620",
     "Total members: {guild.member_count}",
