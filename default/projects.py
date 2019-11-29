@@ -28,5 +28,5 @@ class Projects(Cog):
             f"{message.author.mention}, That doesn't look like a valid vcs link.",
             delete_after=3.0,
         )
-        await sleep(1.5)
+        await sleep(0.5)
         await message.delete()
