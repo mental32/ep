@@ -92,7 +92,7 @@ class Client(ClientBase):
 
     # Internals
 
-    def get_socket_channel(self) -> Optional[TextChannel]:
+    def _get_socket_channel(self) -> Optional[TextChannel]:
         """Return the :class:`discord.TextChannel` for a "socket_channel" id in the config."""
         try:
             channel_id = self._config["ep"]["socket_channel"]
@@ -163,7 +163,7 @@ class Client(ClientBase):
 
         if (
             self._config["ep"]["socket_emit"]
-            and (channel := self.get_socket_channel()) is not None
+            and (channel := self._get_socket_channel()) is not None
         ):
             await channel.edit(topic="alive")
 
@@ -177,7 +177,7 @@ class Client(ClientBase):
 
         await self.wss.broadcast(message)
 
-        channel = self.get_socket_channel()
+        channel = self._get_socket_channel()
 
         if channel is None:
             return
