@@ -12,7 +12,7 @@ from functools import partial, wraps
 from re import compile as re_compile, Pattern, Match
 from itertools import cycle
 from string import Template
-from inspect import iscoroutinefunction, getmembers, signature
+from inspect import iscoroutine, iscoroutinefunction, getmembers, signature
 from typing import (
     Type,
     List,
@@ -133,6 +133,27 @@ async def _decorated_regex(
 # fmt: on
 
 
+@dataclass
+class Group:
+    """A semantically bound grouping of various events."""
+
+    _exception_handlers: List[Callable[[BaseException], Any]] = field(
+        init=False, default_factory=list
+    )
+
+    def add_exception_handler(self, handler: Callable[[BaseException], Any]) -> None:
+        """Adds `handler` to the list of exception handlers."""
+        self._exception_handlers.append(handler)
+
+    async def raise_exception(self, exc: BaseException, corofunc, args) -> None:
+        """Trigger the exception handlers with ``exc``."""
+
+        for handler in self._exception_handlers:
+            with suppress(Exception):
+                if iscoroutine((coro := handler(exc, corofunc, args))):
+                    await coro
+
+
 class Cog:
     """Base class for a GuildCog.
 
@@ -152,6 +173,8 @@ class Cog:
     __cog_name__ : :class:`str`
         The name of the cog.
     """
+
+    group = Group
 
     def __init__(self, client: "BaseClient"):
         self.logger = client.logger
@@ -305,8 +328,12 @@ class Cog:
 
     @staticmethod
     def event(
-        _corofunc: Optional[CoroutineFunction] = None, *, tp: str = "", **attrs: Any
-    ):  # pylint: disable=invalid-name
+        _corofunc: Optional[CoroutineFunction] = None,
+        *,
+        tp: str = "",  # pylint: disable=invalid-name
+        group: Optional[Group] = None,
+        **attrs: Any,
+    ):
         """Mark a coroutine function as an event listener.
 
         >>> @Cog.event
@@ -338,6 +365,8 @@ class Cog:
             being marked.
         tp : :class:`str`
             The type of event to listen out for.
+        group : :class:`ep.Group`
+            The group this event is associated with, None otherwise.
         **attrs : Any
             Implemented for presence based rich predicates.
         """
@@ -354,7 +383,7 @@ class Cog:
 
                 @wraps(corofunc)
                 async def decorated(*args, **kwargs):
-                    nonlocal signature_, attrs
+                    nonlocal signature_, attrs, group
 
                     # Bind the signature over the current arguments
                     bound_sig = signature_.bind(*args, **kwargs)
@@ -378,7 +407,13 @@ class Cog:
                             # Failed to satisfy comparison, return eagerly.
                             return
 
-                    return await corofunc(*args, **kwargs)
+
+                    try:
+                        return await corofunc(*args, **kwargs)
+                    except Exception as exc:
+                        if group is not None:
+                            await group.raise_exception(exc, corofunc, bound_sig)
+                        raise
 
                 return _event(corofunc, event_type=tp, inject=(lambda _: decorated))
 
@@ -435,7 +470,7 @@ class Cog:
             "filter_": filter_,
             "pattern": re_compile(pattern)
             if not isinstance(pattern, Pattern)
-            else pattern
+            else pattern,
         }
 
         def decorator(corofunc: CoroutineFunction):
