@@ -66,6 +66,13 @@ class NewStyle(Cog):
         pass
 ```
 
+```py
+class DoCommandsWork(Cog):
+    @Cog.regex(r'[\.!$]check')
+    async def check_trigger(self, message: Message) -> None:
+        await message.channel.send("Yes, it's just a regular expression :)")
+```
+
 ## Installing
 
  - `pip3 install git+https://github.com/mental32/ep#egg=ep`
