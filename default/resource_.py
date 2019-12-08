@@ -40,7 +40,6 @@ class Resource(Cog):
         self.logger.info(f"Cloning resource repository {url=!r} to {dst=!r}")
         path = await clone_repository(url, dst)
         self._temporary_paths.add(path)
-        self._filepath_cache[path.name] = path
         await self._hook(path)
 
     async def _hook_index_paths(self) -> None:
@@ -57,7 +56,9 @@ class Resource(Cog):
             elif (path := (current_directory / Path(entry))).exists():
                 coro = self._hook(path)
             else:
-                self.logger.error("Bad entry in resource paths %s (%s)", repr(entry), repr(path))
+                self.logger.error(
+                    "Bad entry in resource paths %s (%s)", repr(entry), repr(path)
+                )
                 continue
 
             tasks.add(self.client.schedule_task(coro))
@@ -93,11 +94,11 @@ class Resource(Cog):
         self.logger.info("Attempting to sync %s file(s)", len(difference))
 
         for filename in difference:
-            self.logger.info(
-                "Attempting to sync file %s", repr(self._filepath_cache[filename])
-            )
+            path = self._filepath_cache[filename]
+
+            self.logger.info("Attempting to sync file %s", repr(path))
             try:
-                await channel.send(file=File(self._filepath_cache[filename]))
+                await channel.send(file=File(path))
             except HTTPException as err:
                 self.logger.error("Could not sync file: %s (%s)", repr(filename), err)
 
