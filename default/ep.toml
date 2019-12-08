@@ -19,6 +19,14 @@ captcha.enabled = false
 
 projects.hosts = ["github.com", "gitlab.com"]
 
+resource.channel_id = 633624467817627648
+# git://, http:// and https:// are all valid paths, provided they are git repositories.
+# Otherwise any path is a filepath relative to the resolving source file.
+resource.paths = [
+    "git://github.com/mental32/ep.resources",
+    "./knowledge/Python/"
+]
+
 banners = [
     "category://633624313043353620",
     "Total members: {guild.member_count}",
