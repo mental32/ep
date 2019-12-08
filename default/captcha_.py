@@ -14,6 +14,8 @@ from captcha.image import ImageCaptcha
 from discord import Member, Message, Role, File, Embed, Invite
 from ep import Cog, Client
 
+__all__ = ("Captcha",)
+
 ASCII: str = ascii_letters + digits
 
 

@@ -14,6 +14,8 @@ from discord import Message
 from ep import Cog
 from pydantic import BaseModel
 
+__all__ = ("Tagging",)
+
 
 class TagLookupError(LookupError):
     """Raised when no tag is found."""

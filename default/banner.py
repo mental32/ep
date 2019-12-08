@@ -19,6 +19,8 @@ from typing import (
 from discord import VoiceChannel
 from ep.core import Cog
 
+__all__ = ("BannerCog",)
+
 _STALLING: str = "Stalling for 60 seconds, websocket seems to be closed."
 
 T = TypeVar("T")  # pylint: disable=invalid-name

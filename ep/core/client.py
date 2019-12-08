@@ -10,6 +10,7 @@ from json import dumps as json_dumps
 from time import time
 from functools import partial
 from typing import Union, Any, Optional
+from traceback import print_exc
 
 from discord import TextChannel
 
@@ -141,9 +142,13 @@ class Client(ClientBase):
                 else:
                     name = path.name
 
-                module = importlib.import_module(name)
+                try:
+                    module = importlib.import_module(name)
+                except ImportError:
+                    print_exc()
 
-                for _, obj in inspect.getmembers(module):
+                module_all = getattr(module, "__all__", [])
+                for obj in map(partial(getattr, module), module_all):
                     if (
                         isinstance(obj, type)
                         and issubclass(obj, Cog)
@@ -167,7 +172,9 @@ class Client(ClientBase):
         ):
             await channel.edit(topic="alive")
 
-    async def on_socket_response(self, message: Union[Any, bytes]) -> None:  # pylint: disable=missing-function-docstring
+    async def on_socket_response(
+        self, message: Union[Any, bytes]
+    ) -> None:  # pylint: disable=missing-function-docstring
         if (
             not self._config["ep"]["socket_emit"]
             or isinstance(message, bytes)
