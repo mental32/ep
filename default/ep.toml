@@ -17,7 +17,7 @@ tagging.repository = "https://github.com/mental32/ep.tagging"
 
 captcha.enabled = false
 
-valid_vcs = ["github.com", "gitlab.com"]
+projects.hosts = ["github.com", "gitlab.com"]
 
 banners = [
     "category://633624313043353620",

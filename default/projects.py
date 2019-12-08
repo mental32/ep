@@ -10,7 +10,7 @@ from ep import Cog
 __all__ = ("Projects",)
 
 def _resolve_hosts(client) -> Dict[str, Any]:
-    return {"hosts": "|".join(client.config["default"].get("valid_vcs", []))}
+    return {"hosts": "|".join(client.config["default"]["projects"]["hosts"])}
 
 
 @Cog.export
