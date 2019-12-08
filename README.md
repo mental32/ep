@@ -30,6 +30,8 @@ First lets write our cog, here we're creating the file `./cogs/ping.py` (create 
 from discord import Message
 from ep import Cog
 
+__all__ = {"Ping"}
+
 @Cog.export
 class Ping(Cog):
 
@@ -52,12 +54,16 @@ The bot can now be run with:
 
 ### Events
 
+#### Regular
+
 ```py
 class RegularStyle(Cog):
     @Cog.event
     async def on_message(self, message: Message) -> None:  # Plain ol' boring events, ugh
         pass
 ```
+
+#### Smarter
 
 ```py
 class NewStyle(Cog):
@@ -66,11 +72,13 @@ class NewStyle(Cog):
         pass
 ```
 
+#### Commands
+
 ```py
-class DoCommandsWork(Cog):
+class Commands(Cog):
     @Cog.regex(r'[\.!$]check')
     async def check_trigger(self, message: Message) -> None:
-        await message.channel.send("Yes, it's just a regular expression :)")
+        await message.channel.send("Yes commands work! (it's just a regular expression :))")
 ```
 
 ## Installing
