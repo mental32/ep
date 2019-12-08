@@ -9,19 +9,18 @@ from ep import Cog
 
 __all__ = ("Projects",)
 
-def _resolve_hosts(client) -> Dict[str, Any]:
-    return {"hosts": "|".join(client.config["default"]["projects"]["hosts"])}
-
 
 @Cog.export
 class Projects(Cog):
+    # fmt: off
     _default_kwargs = {
-        "formatter": _resolve_hosts,
+        "formatter": (lambda client: {"hosts": "|".join(client.config["default"]["projects"]["hosts"])}),
         "filter_": (lambda match: isinstance(match, Match)),
         "pattern": r"https?://($hosts)(?:.{0,200})",
         "message_channel_id": 633623473473847308,
         "message_author_bot": False,
     }
+    # fmt: on
 
     @Cog.formatted_regex(**_default_kwargs)
     async def filter_project_message(self, message: Message) -> None:
