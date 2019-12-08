@@ -77,8 +77,11 @@ class Captcha(Cog):
     """A :class:`ep.Cog` responsible for state tracking of all :class:`CaptchaFlow`s."""
     flows: Dict[int, Tuple[CaptchaFlow, Task]]
 
+    _guild_id: int
     _member_role_id: int
     _bot_role_id: int
+
+    is_enabled: bool = False
 
     # Internals
 
@@ -87,6 +90,7 @@ class Captcha(Cog):
         self._guild_id = self.config["default"]["guild_snowflake"]
         self._member_role_id = self.config["default"]["guild_member_role"]
         self._bot_role_id = self.config["default"]["guild_bot_role"]
+        self.is_enabled = self.config["default"]["captcha"].get("enabled", True)
 
     def __get_role(self, name: str) -> Role:
         if not self.client.is_ready():
@@ -109,7 +113,7 @@ class Captcha(Cog):
 
     # Event handlers
 
-    @Cog.event(tp="on_member_leave", member_bot=False)
+    @Cog.event(tp="on_member_leave", member_bot=False, self_is_enabled=True)
     @Cog.wait_until_ready
     async def pop_member_flow(self, member: Member) -> None:
         """Remove the flow for a given :class:`discord.Member`."""
@@ -121,6 +125,10 @@ class Captcha(Cog):
     @Cog.wait_until_ready
     async def start_user_captcha(self, member: Member) -> None:
         """Given a :class:`discord.Member` begin a captcha authentication flow."""
+        if not self.is_enabled:
+            await member.add_roles(self.member_role)
+            return
+
         if member.id in self.flows:
             return
 
