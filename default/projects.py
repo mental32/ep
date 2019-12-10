@@ -108,7 +108,7 @@ class Projects(Cog):
                 read_messages=False, read_message_history=False
             ),
             message.author: PermissionOverwrite(
-                read_messages=True, read_message_history=True
+                read_messages=True, read_message_history=True, send_messages=True
             ),
         }
 
