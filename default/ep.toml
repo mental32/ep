@@ -28,7 +28,7 @@ resource.paths = [
     "./knowledge/Python/"
 ]
 
-banners = [
+banner.entries = [
     "category://633624313043353620",
     "Total members: {guild.member_count}",
     "Server time: {now.strftime('%H:%M')}"

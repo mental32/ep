@@ -95,7 +95,7 @@ class BannerCog(Cog):
     graph: DefaultDict[int, List[str]]
 
     def __post_init__(self):
-        raw: List[str] = self.config["default"].get("banners", [])
+        raw: List[str] = self.config["default"]["banner"].get("entries", [])
 
         entry_mapping: DefaultDict[int, List[str]] = defaultdict(list)
         category_id: int = 0
