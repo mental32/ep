@@ -19,7 +19,8 @@ captcha.enabled = false
 
 projects.hosts = ["github.com", "gitlab.com"]
 
-resource.channel_id = 633624467817627648
+resource.file_limit = 0x700000
+resource.channel_id = 653906357950480384
 # git://, http:// and https:// are all valid paths, provided they are git repositories.
 # Otherwise any path is a filepath relative to the resolving source file.
 resource.paths = [
