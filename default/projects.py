@@ -21,9 +21,8 @@ ALLOCATED_MESSAGE: str = (
 class Projects(Cog):
     """Cog that reacts appropriately to project urls."""
 
-    _url_re: str = r"https?://($hosts)(?:.{0,200})$$"
-
     _default_kwargs = {
+        "pattern": r"^(?:webhook!)?https?://($hosts)(?:.{0,200})$$"
         "message_channel_id": 633623473473847308,
         "message_author_bot": False,
         "formatter": lambda client: {
@@ -57,14 +56,14 @@ class Projects(Cog):
         self.logger.info("Activating webhook channel %s", repr(channel))
 
         async for message in channel.history(limit=None):
-            if message.webhook_id is not None:
+            if message.webhook_id is None:
                 await message.delete()
 
         await channel.edit(sync_permissions=True)
 
     # Listeners
 
-    @Cog.formatted_regex(pattern=fr"^(?<!webhook!){_url_re}", **_negative_lookahed)
+    @Cog.formatted_regex(**_negative_lookahed)
     async def filter_project_message(self, message: Message) -> None:
         """Handle a :class:`discord.Message` sent in the projects channel."""
         await message.channel.send(
@@ -74,7 +73,7 @@ class Projects(Cog):
         await sleep(0.5)
         await message.delete()
 
-    @Cog.formatted_regex(pattern=fr"^(?:webhook!){_url_re}", **_default_kwargs)
+    @Cog.formatted_regex(**_default_kwargs)
     @Cog.wait_until_ready
     async def webhook_project_repository(self, message: Message) -> None:
         """Generate a channel and webhook for a repository."""
