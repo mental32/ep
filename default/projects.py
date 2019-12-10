@@ -1,7 +1,8 @@
 """Manage visability of projects."""
 from asyncio import sleep, TimeoutError  # pylint: disable=redefined-builtin
-from re import Match, search
+from datetime import datetime
 from functools import partial
+from re import Match, search
 
 from discord import Message, PermissionOverwrite, TextChannel
 
@@ -21,9 +22,11 @@ ALLOCATED_MESSAGE: str = (
 class Projects(Cog):
     """Cog that reacts appropriately to project urls."""
 
+    _index_channel: int = 654009312829767680  # XXX: Figure out a way to cfg this.
+
     _default_kwargs = {
         "pattern": r"^(?:webhook!)?https?://(?P<url>$hosts)(?:.{0,200})$$",
-        "message_channel_id": 633623473473847308,
+        "message_channel_id": _index_channel,
         "message_author_bot": False,
         "formatter": lambda client: {
             "hosts": "|".join(client.config["default"]["projects"]["hosts"])
@@ -41,14 +44,16 @@ class Projects(Cog):
 
     # Internal
 
-    async def _activate_webhook_channel(self, channel: TextChannel) -> None:
+    async def _activate_webhook_channel(
+        self, channel: TextChannel, timeout: int = DEALLOCATION_TIMEOUT
+    ) -> None:
         def is_webhook_message(message: Message) -> bool:
             return message.channel == channel and message.webhook_id is not None
 
         wait_for = partial(self.client.wait_for, "message")
 
         try:
-            await wait_for(check=is_webhook_message, timeout=DEALLOCATION_TIMEOUT)
+            await wait_for(check=is_webhook_message, timeout=timeout)
         except TimeoutError:
             await channel.delete()
             return
@@ -60,6 +65,38 @@ class Projects(Cog):
                 await message.delete()
 
         await channel.edit(sync_permissions=True)
+
+    # Zombie rescheduler
+
+    @Cog.task
+    @Cog.wait_until_ready
+    async def _reschedule_orphan_channels(self) -> None:
+        category = self.client.get_channel(self._category_id)
+        assert category is not None
+
+        schedule_task = self.client.schedule_task
+        for channel in category.channels:
+            if channel.id == self._index_channel:
+                continue
+
+            timeout = None
+            now = datetime.now()
+
+            self.logger.info("Inspecting channel %s", repr(channel))
+            async for message in channel.history(limit=None, oldest_first=True):
+                if message.webhook_id is not None:
+                    timeout = None
+                    break
+
+                if timeout is None:
+                    timeout = DEALLOCATION_TIMEOUT - (now - message.created_at).seconds
+
+                    if timeout <= 0:
+                        timeout = DEALLOCATION_TIMEOUT
+
+            if timeout is not None:
+                self.logger.warn("Rescheduling activation task for channel timeout=%s channel=%s", timeout, repr(channel))
+                schedule_task(self._activate_webhook_channel(channel, timeout))
 
     # Listeners
 
@@ -80,7 +117,6 @@ class Projects(Cog):
         assert message.content.startswith("webhook!")
 
         url = message.content[len("webhook!") :]
-
         kwargs = {"topic": url, "reason": f"Invoked by {message.author!s}"}
 
         match = await self.client.loop.run_in_executor(
