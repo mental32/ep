@@ -19,11 +19,13 @@ class Resource(Cog):
 
     def __post_init__(self):
         self._hook_lock = Event()
-        self._paths = self.config["default"]["resource"]["paths"]
-        self._output_channel = self.config["default"]["resource"]["channel_id"]
-        self.client.schedule_task(self._hook_index_paths())
         self._temporary_paths = set()
         self._filepath_cache = {}
+
+        self._paths = paths = self.config["default"]["resource"]["paths"]
+        self._output_channel = self.config["default"]["resource"]["channel_id"]
+
+        self.client.schedule_task(self._hook_index_paths(paths))
 
     def cog_unload(self) -> None:
         for path in self._temporary_paths:
@@ -76,30 +78,13 @@ class Resource(Cog):
             self.logger.error("Output channel was not found.")
             return
 
-        def has_file_attachment(message: Message) -> bool:
-            return message.attachments
+        remotes = set()
+        async for message in channel.history(limit=None):
+            assert len(message.attachments) == 1
+            filename = message.attachments[0].filename
+            remotes.add(filename)
 
-        def into_filename(message: Message) -> str:
-            return message.attachments[0].filename
-
-        cached_filenames = set(self._filepath_cache)
-        remote_filenames = {
-            filename
-            async for filename in channel.history(limit=None)
-            .filter(has_file_attachment)
-            .map(into_filename)
-        }
-
-        difference = cached_filenames.difference(remote_filenames)
-        self.logger.info("Attempting to sync %s file(s)", len(difference))
-
-        for filename in difference:
-            path = self._filepath_cache[filename]
-
-            self.logger.info("Attempting to sync file %s", repr(path))
-            try:
-                await channel.send(file=File(path))
-            except HTTPException as err:
-                self.logger.error("Could not sync file: %s (%s)", repr(filename), err)
-
-        self.logger.info("Done syncing file contents.")
+        cached = set(self._filepath_cache)
+        for missing in cached.difference(remotes):
+            self.logger.warn("Restoring missing file %s", missing)
+            await channel.send(file=File(self._filepath_cache[missing]))
