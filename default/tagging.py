@@ -134,7 +134,7 @@ class Tagging(Cog):
         if isinstance(error, TagLookupError) and (message := bound.arguments.get("message", None)) is not None:
                 await message.channel.send(f"{message.author.mention}, {error.args[0]!s}")
 
-    # # Public
+    # Public
 
     @Cog.regex(fr"{_base} {_tag_id}", group=_commands)
     async def get(self, message: Message, *, tag_id: str) -> None:

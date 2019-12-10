@@ -17,6 +17,8 @@ __all__ = ("Resource",)
 class Resource(Cog):
     """Manage common resource access in the guild."""
 
+    # Overloads
+
     def __post_init__(self):
         self._hook_lock = Event()
         self._temporary_paths = set()
@@ -28,13 +30,17 @@ class Resource(Cog):
 
         self.client.schedule_task(self._hook_index_paths(paths))
 
+    def cog_unload(self) -> None:
+        for path in self._temporary_paths:
+            rmtree(path)
+
+    # Properties
+
     @property
     def file_limit(self) -> int:
         return self._file_limit
 
-    def cog_unload(self) -> None:
-        for path in self._temporary_paths:
-            rmtree(path)
+    # Internal
 
     async def _hook(self, path: Path) -> None:
         n_large = 0
@@ -84,6 +90,8 @@ class Resource(Cog):
 
         await gather(*tasks)
         self._hook_lock.set()
+
+    # Event handlers
 
     @Cog.event(tp="on_ready")
     async def _sync_output_channel(self) -> None:
