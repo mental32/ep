@@ -17,6 +17,7 @@ tagging.repository = "https://github.com/mental32/ep.tagging"
 
 captcha.enabled = false
 
+projects.category_id = 653936235466719252
 projects.hosts = ["github.com", "gitlab.com"]
 
 resource.file_limit = 0x700000
