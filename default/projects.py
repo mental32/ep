@@ -22,7 +22,7 @@ class Projects(Cog):
     """Cog that reacts appropriately to project urls."""
 
     _default_kwargs = {
-        "pattern": r"^(?:webhook!)?https?://($hosts)(?:.{0,200})$$"
+        "pattern": r"^(?:webhook!)?https?://(?P<url>$hosts)(?:.{0,200})$$",
         "message_channel_id": 633623473473847308,
         "message_author_bot": False,
         "formatter": lambda client: {
