@@ -30,7 +30,8 @@ class Resource(Cog):
 
         self.client.schedule_task(self._hook_index_paths(self._paths))
 
-    def cog_unload(self) -> None:
+    @Cog.destructor
+    def _remove_stubs(self) -> None:
         for path in self._temporary_paths:
             rmtree(path)
 

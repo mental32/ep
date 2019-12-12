@@ -1,18 +1,19 @@
-"""Cog implementation"""
-import asyncio
+"""Cog implementation."""
 import ast
+import asyncio
 import functools
+import hashlib
 import inspect
 import os
-import hashlib
-from sys import stderr
 from asyncio import Task, iscoroutinefunction
+from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial, wraps
-from re import compile as re_compile, Pattern, Match
-from itertools import cycle
-from string import Template
 from inspect import iscoroutine, iscoroutinefunction, getmembers, signature
+from itertools import cycle
+from re import compile as re_compile, Pattern, Match
+from string import Template
+from sys import stderr
 from typing import (
     Type,
     List,
@@ -27,6 +28,8 @@ from typing import (
 )
 
 from discord import Message
+
+from ep import ConfigValue
 
 __all__ = ("Cog",)
 
@@ -178,18 +181,32 @@ class Cog:
 
     def __init__(self, client: "BaseClient"):
         self.logger = client.logger
-        self.config = client.config
+        self.config = config = client.config
         self.loop = client.loop
 
         self.client = client
 
-        self.__cog_listeners__ = [
-            (getattr(obj, "__event_listener__"), name)
-            for name, obj in getmembers(self)
-            if hasattr(obj, "__event_listener__")
-        ]
-
         self.__cog_name__ = type(self).__name__
+        self.__cog_destructors__ = []
+        self.__cog_listeners__ = []
+        self.__cog_tasks__ = []
+
+        for name, obj in getmembers(self):
+            if hasattr(obj, "__cog_unload_cb__"):
+                self.__cog_destructors__.append(obj)
+
+            elif hasattr(obj, "__event_listener__"):
+                self.__cog_listeners__.append(
+                    (getattr(obj, "__event_listener__"), name)
+                )
+
+            elif hasattr(obj, "__schedule_task__"):
+                self.__cog_tasks__.append(obj)
+
+            elif not isinstance(
+                getattr(type(self), name, None), property
+            ) and isinstance(obj, ConfigValue):
+                setattr(self, name, obj.resolve(config))
 
         self.cog_hash = (
             hashlib.md5(
@@ -208,11 +225,6 @@ class Cog:
     def __repr__(self):
         return f"<Cog name={type(self).__name__!r}>"
 
-    # Special methods
-
-    def cog_unload(self):
-        """A method that is called when a cog is unloaded."""
-
     ## Creation hooks
 
     def cog_inject(self, client):
@@ -222,10 +234,10 @@ class Cog:
         for name, method_name in self.__cog_listeners__:
             client.add_listener(getattr(self, method_name), name)
 
-        for _, obj in inspect.getmembers(self):
-            if not disabled and getattr(obj, "__schedule_task__", False):
-                client.logger.info("Scheduling task: %s", repr(obj))
-                client.schedule_task(obj())
+        if not disabled:
+            for func in self.__cog_tasks__:
+                client.logger.info("Scheduling task: %s", repr(func))
+                client.schedule_task(func())
 
         return self
 
@@ -235,7 +247,9 @@ class Cog:
             for _, method_name in self.__cog_listeners__:
                 client.remove_listener(getattr(self, method_name))
         finally:
-            self.cog_unload()
+            for cb in self.__cog_destructors__:
+                with suppress(Exception):
+                    cb()
 
     # Properties
 
@@ -245,6 +259,8 @@ class Cog:
         return []
 
     # staticmethods
+
+    # Markers
 
     @staticmethod
     def export(klass: Optional[Type["Cog"]]):
@@ -269,6 +285,23 @@ class Cog:
 
         corofunc.__schedule_task__ = True
         return corofunc
+
+    @staticmethod
+    def destructor(func: Callable) -> Callable:
+        """Mark a function to be run as a cog destructor, when the cog is unloaded.
+
+        Parameters
+        ----------
+        func : Callable
+            The function the mark.
+        """
+        if iscoroutinefunction(func):
+            raise TypeError("target functions must not be a coroutine function.")
+
+        func.__cog_unload_cb__ = True
+        return func
+
+    # Decorators
 
     @staticmethod
     def wait_until_ready(
@@ -406,7 +439,6 @@ class Cog:
                         if base != expected:
                             # Failed to satisfy comparison, return eagerly.
                             return
-
 
                     try:
                         return await corofunc(*args, **kwargs)
