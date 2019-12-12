@@ -27,19 +27,12 @@ class Resource(Cog):
         self._hook_lock = Event()
         self._temporary_paths = set()
         self._filepath_cache = {}
-
         self.client.schedule_task(self._hook_index_paths(self._paths))
 
     @Cog.destructor
     def _remove_stubs(self) -> None:
         for path in self._temporary_paths:
             rmtree(path)
-
-    # Properties
-
-    @property
-    def file_limit(self) -> int:
-        return self._file_limit
 
     # Internal
 
@@ -51,7 +44,7 @@ class Resource(Cog):
             return path.is_file() and path.name.endswith(".pdf")
 
         for sub in filter(is_pdf_file, path.iterdir()):
-            if sub.stat().st_size <= self.file_limit:
+            if sub.stat().st_size <= self._file_limit:
                 self._filepath_cache[sub.name] = sub.resolve().absolute()
             else:
                 n_large += 1

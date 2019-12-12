@@ -120,6 +120,8 @@ class Tagging(Cog):
 
         self._head[tag_id] = name
 
+        # TODO: Commit and push changes.
+
         return Tag(**unserialized)
 
     async def _get_tag(self, tag_id: str) -> Tag:
