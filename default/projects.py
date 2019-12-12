@@ -25,7 +25,7 @@ class Projects(Cog):
     _index_channel: int = 654009312829767680  # XXX: Figure out a way to cfg this.
 
     _default_kwargs = {
-        "pattern": r"^(?:webhook!)?https?://(?P<url>$hosts)(?:.{0,200})$$",
+        "pattern": r"^(?:webhook!)?https?://($hosts)(?:.{0,200})$$",
         "message_channel_id": _index_channel,
         "message_author_bot": False,
         "formatter": lambda client: {
