@@ -60,10 +60,10 @@ class Projects(Cog):
 
         self.logger.info("Activating webhook channel %s", repr(channel))
 
-        async for message in channel.history(limit=None):
-            if message.webhook_id is None:
-                await message.delete()
+        def is_not_webhook(message: Message) -> bool:
+            return message.webhook_id is None
 
+        await channel.purge(limit=None, check=is_not_webhook, bulk=True)
         await channel.edit(sync_permissions=True)
 
     # Zombie rescheduler
