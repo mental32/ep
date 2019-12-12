@@ -12,7 +12,6 @@ from json import loads as json_loads, dumps as json_dumps
 from aiofiles import open as aiofiles_open
 from discord import Message
 from ep import Cog
-from pydantic import BaseModel
 
 __all__ = ("Tagging",)
 
@@ -29,7 +28,8 @@ async def clone_repository(repository_url: str, repository_path: str) -> Path:
     return Path(repository_path)
 
 
-class Tag(BaseModel):
+@dataclass
+class Tag:
     """Representation of a tag."""
     id: str
     body: str
