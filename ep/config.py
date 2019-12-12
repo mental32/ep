@@ -3,7 +3,7 @@ from typing import Dict, Union, Any
 
 from toml import loads as toml_loads
 
-__all__ = ("RAW_DEFAULT", "Config")
+__all__ = ("RAW_DEFAULT", "Config", "ConfigValue")
 
 RAW_DEFAULT: str = """
 # "ep" is the main configuration loading point, it's form is standardised.
@@ -73,3 +73,18 @@ class Config(dict):
         path = path.resolve().absolute()
 
         return cls(toml_loads(path.read_text()), fp=path)
+
+
+class ConfigValue:
+    """A class for describing configuration based values with lazy resolution."""
+    _sentinel = object()
+
+    def __init__(self, *path, default: Any = _sentinel):
+        self.path = path
+
+    def resolve(self, config: Config) -> Any:
+        """Resolve the ConfigValue from a Config."""
+        target = config
+        for part in self.path:
+            target = target[part]
+        return target

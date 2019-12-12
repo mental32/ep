@@ -6,7 +6,7 @@ from tempfile import mkdtemp
 from typing import Set, List
 
 from discord import Message, File, HTTPException
-from ep import Cog
+from ep import Cog, ConfigValue
 
 from tagging import clone_repository
 
@@ -19,16 +19,16 @@ class Resource(Cog):
 
     # Overloads
 
+    _paths: List[str] = ConfigValue("default", "resource", "paths")
+    _output_channel: int = ConfigValue("default", "resource", "channel_id")
+    _file_limit: int = ConfigValue("default", "resource", "file_limit", default=0x700000)
+
     def __post_init__(self):
         self._hook_lock = Event()
         self._temporary_paths = set()
         self._filepath_cache = {}
 
-        self._paths = paths = self.config["default"]["resource"]["paths"]
-        self._output_channel = self.config["default"]["resource"]["channel_id"]
-        self._file_limit = self.config["default"]["resource"].get("file_limit", 0x700000)
-
-        self.client.schedule_task(self._hook_index_paths(paths))
+        self.client.schedule_task(self._hook_index_paths(self._paths))
 
     def cog_unload(self) -> None:
         for path in self._temporary_paths:

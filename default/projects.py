@@ -6,7 +6,7 @@ from re import Match, search
 
 from discord import Message, PermissionOverwrite, TextChannel
 
-from ep import Cog
+from ep import Cog, ConfigValue
 
 
 __all__ = ("Projects",)
@@ -38,9 +38,8 @@ class Projects(Cog):
         "filter_": (lambda match: isinstance(match, Match)),
     }
 
-    def __post_init__(self):
-        self._category_id = self.config["default"]["projects"]["category_id"]
-        self._member_role_id = self.config["default"]["guild_member_role"]
+    _category_id: int = ConfigValue("default", "projects", "category_id")
+    _member_role_id: int = ConfigValue("default", "guild_member_role")
 
     # Internal
 

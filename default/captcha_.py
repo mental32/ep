@@ -12,7 +12,7 @@ from typing import Tuple, ClassVar, Set, Dict, Optional
 
 from captcha.image import ImageCaptcha
 from discord import Member, Message, Role, File, Embed, Invite
-from ep import Cog, Client
+from ep import Cog, Client, ConfigValue
 
 __all__ = ("Captcha",)
 
@@ -81,15 +81,14 @@ class Captcha(Cog):
     _member_role_id: int
     _bot_role_id: int
 
-    is_enabled: bool = False
+    _guild_id = ConfigValue("default", "guild_snowflake")
+    _member_role_id = ConfigValue("default", "guild_member_role")
+    _bot_role_id = ConfigValue("default", "guild_bot_role")
 
     # Internals
 
     def __post_init__(self):
         self.flows = {}
-        self._guild_id = self.config["default"]["guild_snowflake"]
-        self._member_role_id = self.config["default"]["guild_member_role"]
-        self._bot_role_id = self.config["default"]["guild_bot_role"]
         self.is_enabled = self.config["default"]["captcha"].get("enabled", True)
 
     def __get_role(self, name: str) -> Role:

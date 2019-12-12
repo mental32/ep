@@ -11,7 +11,7 @@ from json import loads as json_loads, dumps as json_dumps
 
 from aiofiles import open as aiofiles_open
 from discord import Message
-from ep import Cog
+from ep import Cog, ConfigValue
 
 __all__ = ("Tagging",)
 
@@ -47,11 +47,12 @@ class Tagging(Cog):
     _tails: Set[str]
     _head: Dict[str, str]
 
+    _repository_url: str = ConfigValue("default", "tagging", "repository")
+
     def __post_init__(self) -> None:
-        repository_url: str = self.config["default"]["tagging"]["repository"]
         repository_path: str = mkdtemp()
 
-        task = self.client.schedule_task(clone_repository(repository_url, repository_path))
+        task = self.client.schedule_task(clone_repository(self._repository_url, repository_path))
 
         def repository_hook_trigger(fut: Future) -> None:
             path = fut.result()
