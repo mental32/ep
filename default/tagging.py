@@ -108,6 +108,7 @@ class Tagging(Cog):
             while (tag_id := "".join(choice(ascii_letters) for _ in range(6))) in self._tails:
                 await sleep(0)
 
+        self._tails[tag_id] = name
         unserialized = {"id": tag_id, "body": body}
 
         async with aiofiles_open(self._repository_path / name, "w") as entry:
@@ -116,7 +117,6 @@ class Tagging(Cog):
         async with aiofiles_open(self._repository_path / "head.jsonl", "a") as header:
             await header.write(json_dumps({"aliased": name, "aliases": []}) + "\n")
 
-        self._tails[tag_id] = name
         self._head[tag_id] = name
 
         return Tag(**unserialized)
