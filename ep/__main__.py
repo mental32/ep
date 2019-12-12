@@ -40,7 +40,7 @@ def _http_probe(config: Config, _: Dict) -> Optional[Dict[str, Any]]:
     """Check across discord if another client instance is running."""
     token = infer_token()
 
-    if await_(http_probe(token)):
+    if await_(http_probe(token, config)):
         return {"token": token}
 
     return None

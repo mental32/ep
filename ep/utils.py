@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from contextlib import suppress
 from socket import socket
 from typing import Optional, Callable, Any
