@@ -14,9 +14,9 @@ Ep started out as a wholesome discord bot for the efficient python
 grew into a large, wild, not very well maintained code base.
 
 Ep is to the commands extension what django is to flask, just a
-batteries included approach to making discord bots. It's separated
-as a library and discord bot because I found some of the core logic
-usefull for some other projects.
+batteries included approach to making discord bots. This repository is
+separated out as the library `/ep/` and simultainiously a discord bot
+`/default/`.
 
 ## Examples
 
@@ -60,7 +60,7 @@ The bot can now be run with:
 class RegularStyle(Cog):
     @Cog.event
     async def on_message(self, message: Message) -> None:  # Plain ol' boring events, ugh
-        pass
+        assert isinstanc(message, Message)
 ```
 
 #### Smarter
@@ -69,7 +69,7 @@ class RegularStyle(Cog):
 class NewStyle(Cog):
     @Cog.event(tp="on_message", message_channel_id=SPECIAL_CHANNEL)  # Alright! now we can apply predicates over event dispatch.
     async def filtered_message(self, message: Message) -> None:
-        pass
+        assert message.channel.id == SPECIAL_CHANNEL
 ```
 
 #### Commands
@@ -78,7 +78,7 @@ class NewStyle(Cog):
 class Commands(Cog):
     @Cog.regex(r'[\.!$]check')
     async def check_trigger(self, message: Message) -> None:
-        await message.channel.send("Yes commands work! (it's just a regular expression :))")
+        await message.channel.send("Yes commands work!")  # it's just a regular expression :)
 ```
 
 ## Installing
