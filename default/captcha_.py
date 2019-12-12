@@ -84,35 +84,27 @@ class Captcha(Cog):
     _guild_id = ConfigValue("default", "guild_snowflake")
     _member_role_id = ConfigValue("default", "guild_member_role")
     _bot_role_id = ConfigValue("default", "guild_bot_role")
+    _is_enabled = ConfigValue("default", "captcha", "enabled", default=True)
 
     # Internals
 
     def __post_init__(self):
         self.flows = {}
-        self.is_enabled = self.config["default"]["captcha"].get("enabled", True)
-
-    def __get_role(self, name: str) -> Role:
-        if not self.client.is_ready():
-            return None
-
-        snowflake: int = getattr(self, f"_{name}_id")
-
-        guild = self.client.get_guild(self._guild_id)
-        assert guild is not None
-
-        role = guild.get_role(snowflake)
-        assert role is not None, f"{name} => {snowflake}"
-
-        return role
 
     # Properties
 
-    member_role = property((lambda self: self.__get_role("member_role")))
-    bot_role = property((lambda self: self.__get_role("bot_role")))
+    @property
+    def guild(self):
+        guild = self.client.get_guild(self._guild_id)
+
+        if self.client.is_ready():
+            assert guild is not None
+
+        return guild
 
     # Event handlers
 
-    @Cog.event(tp="on_member_leave", member_bot=False, self_is_enabled=True)
+    @Cog.event(tp="on_member_leave", member_bot=False)
     @Cog.wait_until_ready
     async def pop_member_flow(self, member: Member) -> None:
         """Remove the flow for a given :class:`discord.Member`."""
@@ -124,7 +116,12 @@ class Captcha(Cog):
     @Cog.wait_until_ready
     async def start_user_captcha(self, member: Member) -> None:
         """Given a :class:`discord.Member` begin a captcha authentication flow."""
-        if not self.is_enabled:
+        role = self.guild.get_role(self._member_role_id)
+        if role is None:
+            self.logger.error("Could not get the member role with ID %s", self._member_role_id)
+            return
+
+        if not self._is_enabled:
             await member.add_roles(self.member_role)
             return
 
@@ -153,4 +150,10 @@ class Captcha(Cog):
     async def role_bot(self, member: Member) -> None:
         """Callback that gives bots the bot role."""
         assert member.bot, "Wait...something really bad just happened."
-        await member.add_roles(self.bot_role)
+
+        role = self.guild.get_role(self._bot_role_id)
+        if role is None:
+            self.logger.error("Could not get the bot role with ID %s", self._member_role_id)
+            return
+
+        await member.add_roles(rol)
