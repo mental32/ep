@@ -1,40 +1,43 @@
 """Captcha based authentication for discord."""
 
-from asyncio import wait, Future, Task, TimeoutError  # pylint: disable=redefined-builtin
-from dataclasses import dataclass, field
+from asyncio import Future, Task, TimeoutError  # pylint: disable=redefined-builtin
 from functools import partial
 from os import close
 from pathlib import Path
 from random import choice
-from string import ascii_letters, digits
+from string import ascii_uppercase, digits
 from tempfile import mkstemp
-from typing import Tuple, ClassVar, Set, Dict, Optional
+from typing import Tuple, ClassVar, Dict, Optional
 
 from captcha.image import ImageCaptcha
 from discord import Member, Message, Role, File, Embed, Invite
-from ep import Cog, Client, ConfigValue
+from ep import Cog, ConfigValue
 
-__all__ = ("Captcha",)
+__all__ = {"Captcha"}
 
-ASCII: str = ascii_letters + digits
+ASCII: str = ascii_uppercase + digits
 
 
-@dataclass
-class CaptchaFlow:
-    """Represents the state of a captcha flow."""
+@Cog.export
+class Captcha(Cog):
+    """A :class:`ep.Cog` responsible for state tracking of all :class:`CaptchaFlow`s."""
 
-    member: Member
-    client: Client
-    done: bool = field(default=False)
-
+    flows: Dict[Member, Task]
     __captcha: ClassVar[ImageCaptcha] = ImageCaptcha()
 
     _TIMED_OUT: str = "You've been timed out. I've had to remove you from the guild."
 
-    def __hash__(self):
-        return hash(self.member)
+    _guild_id: int = ConfigValue("default", "guild_snowflake")
+    _member_role_id: int = ConfigValue("default", "guild_member_role")
+    _bot_role_id: int = ConfigValue("default", "guild_bot_role")
+    _is_enabled: bool = ConfigValue("default", "captcha", "enabled", default=True)
 
-    def generate(self) -> Tuple[Path, str]:
+    def __post_init__(self):
+        self.flows = {}
+
+    # Internals
+
+    def _generate_captcha(self) -> Tuple[Path, str]:
         """Generate a secret and an image captcha."""
         secret = "".join(choice(ASCII) for _ in range(8))
 
@@ -45,62 +48,44 @@ class CaptchaFlow:
 
         return Path(filepath), secret
 
-    async def start(self, invite: Optional[Invite] = None):
+    async def _start_flow(self, member: Member, invite: Optional[Invite] = None):
         """Begin the captcha flow for a given :class:`discord.Member`."""
-        path, secret = await self.client.loop.run_in_executor(None, self.generate)
+        path, secret = await self.client.loop.run_in_executor(
+            None, self._generate_captcha
+        )
 
-        self.client.logger.info("Started captcha auth flow for %s with secret %s", str(self.member), repr(secret))
+        self.client.logger.info(
+            "Started captcha auth flow for %s with secret %s", str(member), repr(secret)
+        )
 
         file = File(str(path))
         embed = Embed(title="Captcha flow")
         embed.set_image(url=f"attachment://{path.name!s}")
 
-        message = await self.member.send(file=file, embed=embed)
+        message = await member.send(file=file, embed=embed)
 
         def check(message: Message) -> bool:
-            return message.author == self.member
+            return message.author == member
 
         wait_for = partial(self.client.wait_for, check=check, timeout=300)
         invite_fmt: str = f" if you'd like to rejoin use {invite}." if invite is not None else "."
 
-        try:
-            while message.content != secret and (message := await wait_for("message")):
-                self.done = True
-        except TimeoutError:
-            await self.member.send(self._TIMED_OUT + invite_fmt)
-        finally:
-            path.unlink()
+        while message.content != secret:
+            try:
+                message = await wait_for("message")
+            except TimeoutError:
+                await member.send(self._TIMED_OUT + invite_fmt)
+                raise
+            finally:
+                path.unlink()
 
-
-@Cog.export
-class Captcha(Cog):
-    """A :class:`ep.Cog` responsible for state tracking of all :class:`CaptchaFlow`s."""
-    flows: Dict[int, Tuple[CaptchaFlow, Task]]
-
-    _guild_id: int
-    _member_role_id: int
-    _bot_role_id: int
-
-    _guild_id = ConfigValue("default", "guild_snowflake")
-    _member_role_id = ConfigValue("default", "guild_member_role")
-    _bot_role_id = ConfigValue("default", "guild_bot_role")
-    _is_enabled = ConfigValue("default", "captcha", "enabled", default=True)
-
-    # Internals
-
-    def __post_init__(self):
-        self.flows = {}
-
-    # Properties
-
-    @property
-    def guild(self):
+    def _get_role(self, ident: int) -> Role:
         guild = self.client.get_guild(self._guild_id)
 
         if self.client.is_ready():
             assert guild is not None
 
-        return guild
+        return guild.get_role(ident)
 
     # Event handlers
 
@@ -108,42 +93,47 @@ class Captcha(Cog):
     @Cog.wait_until_ready
     async def pop_member_flow(self, member: Member) -> None:
         """Remove the flow for a given :class:`discord.Member`."""
-        if (pair := self.flows.pop(member.id, None)) is not None:
-            flow, task = pair
+        if (task := self.flows.pop(member, None)) is not None:
             task.cancel()
 
     @Cog.event(tp="on_member_join", member_bot=False)
     @Cog.wait_until_ready
     async def start_user_captcha(self, member: Member) -> None:
         """Given a :class:`discord.Member` begin a captcha authentication flow."""
-        role = self.guild.get_role(self._member_role_id)
-        if role is None:
-            self.logger.error("Could not get the member role with ID %s", self._member_role_id)
+        if (member_role := self._get_role(self._member_role_id)) is None:
+            self.logger.error(
+                "Could not get the member role with ID %s", self._member_role_id
+            )
             return
 
         if not self._is_enabled:
-            await member.add_roles(self.member_role)
+            await member.add_roles(member_role)
             return
 
-        if member.id in self.flows:
+        if member in self.flows:
             return
 
-        flow = CaptchaFlow(member, self.client)
-
-        task = self.client.schedule_task(flow.start())
+        task = self.client.schedule_task(self._start_flow(member))
 
         def remove_flow(future: Future) -> None:
             try:
                 future.result()  # Propagates any exceptions
+            except TimeoutError:
+                await member.kick(reason="Captcha timeout exceeded.")
+                return
             finally:
-                self.flows.pop(flow, None)
+                self.flows.pop(member, None)
 
-            self.logger.info("Successfully completed captcha auth flow for %s adding roles: %s", str(member), repr(self.member_role))
-            self.client.schedule_task(member.add_roles(self.member_role))
+            self.client.schedule_task(member.add_roles(member_role))
+            self.logger.info(
+                "Successfully completed captcha auth flow for %s adding roles: %s",
+                str(member),
+                repr(member_role),
+            )
 
         task.add_done_callback(remove_flow)
 
-        self.flows[member.id] = (flow, task)
+        self.flows[member] = task
 
     @Cog.event(tp="on_member_join", member_bot=True)
     @Cog.wait_until_ready
@@ -151,9 +141,10 @@ class Captcha(Cog):
         """Callback that gives bots the bot role."""
         assert member.bot, "Wait...something really bad just happened."
 
-        role = self.guild.get_role(self._bot_role_id)
-        if role is None:
-            self.logger.error("Could not get the bot role with ID %s", self._member_role_id)
+        if (bot_role := self._get_role(self._bot_role_id)) is None:
+            self.logger.error(
+                "Could not get the bot role with ID %s", self._bot_role_id
+            )
             return
 
-        await member.add_roles(rol)
+        await member.add_roles(bot_role)
