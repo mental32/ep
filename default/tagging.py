@@ -164,9 +164,7 @@ class Tagging(Cog):
         tag = await self._get_tag(tag_id)
         await message.channel.send(f"{tag.body}")
 
-    @Cog.regex(
-        fr"{_base} (?:a(?:lias)?) {_tag_id} (?P<alias>[A-Za-z]+)", group=_commands
-    )
+    @Cog.regex(fr"{_base} (?:a(?:lias)?) {_tag_id} (?P<alias>[\w]+)", group=_commands)
     async def alias(self, message: Message, tag_id: str, alias: str) -> None:
         """Alias a tag."""
         if alias in self._tails or alias in self._head:
