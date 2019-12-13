@@ -16,11 +16,11 @@ cogpath = "."  # relative to the current file
 # "socket_channel" is the discord channel id of the channel to use for
 # network agnostic communication, used with the tui control panel.
 #
-socket_channel = 1234567890
+socket_channel = 0
 
 # "socket_emit" is used to control whether to relay socket messages into
 # the "socket_channel"
-socket_emit = true
+socket_emit = false
 
 # "superusers" is a list of discord user snowflakes and its used to auth
 # users when the TUI connects through discord directly.
