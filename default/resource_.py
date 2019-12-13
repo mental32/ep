@@ -5,7 +5,7 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from typing import Set, List
 
-from discord import Message, File, HTTPException
+from discord import File
 from ep import Cog, ConfigValue
 
 from tagging import clone_repository
@@ -21,7 +21,9 @@ class Resource(Cog):
 
     _paths: List[str] = ConfigValue("default", "resource", "paths")
     _output_channel: int = ConfigValue("default", "resource", "channel_id")
-    _file_limit: int = ConfigValue("default", "resource", "file_limit", default=0x700000)
+    _file_limit: int = ConfigValue(
+        "default", "resource", "file_limit", default=0x700000
+    )
 
     def __post_init__(self):
         self._hook_lock = Event()

@@ -1,7 +1,8 @@
+"""Implementation of Tag Cog."""
 from asyncio import create_subprocess_shell, sleep, Future
 from asyncio.subprocess import PIPE
 from dataclasses import dataclass
-from typing import Type, Set, Dict, Optional
+from typing import Set, Dict, Optional
 from pathlib import Path
 from random import choice
 from string import ascii_letters
@@ -19,8 +20,12 @@ __all__ = ("Tagging",)
 class TagLookupError(LookupError):
     """Raised when no tag is found."""
 
+
 async def clone_repository(repository_url: str, repository_path: str) -> Path:
-    proc = await create_subprocess_shell(f"git clone {repository_url} {repository_path}", stdout=PIPE, stderr=PIPE)
+    """Clone a git repsitory from a :class:`str` url into a :class:`str` path."""
+    proc = await create_subprocess_shell(
+        f"git clone {repository_url} {repository_path}", stdout=PIPE, stderr=PIPE
+    )
 
     await proc.communicate()
     assert proc.returncode == 0
@@ -31,12 +36,15 @@ async def clone_repository(repository_url: str, repository_path: str) -> Path:
 @dataclass
 class Tag:
     """Representation of a tag."""
-    id: str
+
+    id: str  # pylint: disable=invalid-name
     body: str
 
 
 @Cog.export
 class Tagging(Cog):
+    """Tag and access tagged resouces."""
+
     _base: str = r"!(t|tag)"
     _tag_id: str = r"(?P<tag_id>\d+|[A-Za-z]+)"
     _tag_body: str = r"(?P<tag_body>.{0,512})"
@@ -52,7 +60,9 @@ class Tagging(Cog):
     def __post_init__(self) -> None:
         repository_path: str = mkdtemp()
 
-        task = self.client.schedule_task(clone_repository(self._repository_url, repository_path))
+        task = self.client.schedule_task(
+            clone_repository(self._repository_url, repository_path)
+        )
 
         def repository_hook_trigger(fut: Future) -> None:
             path = fut.result()
@@ -63,12 +73,15 @@ class Tagging(Cog):
 
         self._commands.add_exception_handler(self._on_tag_exception)
 
-    def cog_unload(self) -> None:
+    @Cog.destructor
+    def _cleanup_path(self) -> None:
         if self._repository_path is None:
             return
 
         assert self._repository_path.exists()
-        assert self._repository_path != Path(".")  # Unless you like to cry, don't remove this assertion.
+        assert self._repository_path != Path(
+            "."
+        )  # Unless you like to cry, don't remove this assertion.
 
         rmtree(self._repository_path)
 
@@ -104,9 +117,12 @@ class Tagging(Cog):
                 for alias in serialized["aliases"]:
                     head[alias] = aliased
 
-    async def _write_tag(self, name: str, body: str, tag_id: Optional[str] = None) -> Tag:
+    async def _write_tag(
+        self, name: str, body: str, tag_id: Optional[str] = None
+    ) -> Tag:
         if tag_id is None:
-            while (tag_id := "".join(choice(ascii_letters) for _ in range(6))) in self._tails:
+            while tag_id in self._tails:
+                tag_id = "".join(choice(ascii_letters) for _ in range(6))
                 await sleep(0)
 
         self._tails[tag_id] = name
@@ -133,9 +149,12 @@ class Tagging(Cog):
         async with aiofiles_open(self._repository_path / name) as entry:
             return Tag(**json_loads(await entry.read()))
 
-    async def _on_tag_exception(self, exc, corofunc, bound) -> None:
-        if isinstance(error, TagLookupError) and (message := bound.arguments.get("message", None)) is not None:
-                await message.channel.send(f"{message.author.mention}, {error.args[0]!s}")
+    async def _on_tag_exception(self, exc, _, bound) -> None:
+        if (
+            isinstance(exc, TagLookupError)
+            and (message := bound.arguments.get("message", None)) is not None
+        ):
+            await message.channel.send(f"{message.author.mention}, {exc.args[0]!s}")
 
     # Public
 
@@ -145,12 +164,13 @@ class Tagging(Cog):
         tag = await self._get_tag(tag_id)
         await message.channel.send(f"{tag.body}")
 
-    @Cog.regex(fr"{_base} (?:a(?:lias)?) {_tag_id} (?P<alias>[A-Za-z]+)", group=_commands)
+    @Cog.regex(
+        fr"{_base} (?:a(?:lias)?) {_tag_id} (?P<alias>[A-Za-z]+)", group=_commands
+    )
     async def alias(self, message: Message, tag_id: str, alias: str) -> None:
         """Alias a tag."""
         if alias in self._tails or alias in self._head:
             raise TagLookupError(f"That alias is already in use: {alias}")
-            return
 
         if tag_id in self._tails:
             real = self._tails[tag_id]
@@ -162,7 +182,9 @@ class Tagging(Cog):
         self._tails[alias] = real
         self._head[alias] = real
 
-        await message.channel.send(f"{message.author.mention}, I've managed to succesfully alias {tag_id} to {alias}")
+        await message.channel.send(
+            f"{message.author.mention}, I've managed to succesfully alias {tag_id} to {alias}"
+        )
 
     @Cog.regex(fr"{_base} (remove|delete) {_tag_id}", group=_commands)
     async def delete(self, message: Message, *, tag_id: str) -> None:
@@ -172,7 +194,9 @@ class Tagging(Cog):
     async def post(self, message: Message, *, tag_body: str) -> None:
         """Create a tag."""
         tag = await self._write_tag(f"{message.channel.id}.{message.id}", tag_body)
-        await message.channel.send(f"{message.author.mention}, I've managed to create that tag (id is `{tag.id}`)")
+        await message.channel.send(
+            f"{message.author.mention}, I've managed to create that tag (id is `{tag.id}`)"
+        )
 
     @Cog.regex(fr"{_base} (put|edit) {_tag_id} {_tag_body}", group=_commands)
     async def put(self, message: Message, *, tag_id: str, tag_body: str) -> None:

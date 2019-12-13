@@ -94,7 +94,11 @@ class Projects(Cog):
                         timeout = DEALLOCATION_TIMEOUT
 
             if timeout is not None:
-                self.logger.warn("Rescheduling activation task for channel timeout=%s channel=%s", timeout, repr(channel))
+                self.logger.warn(
+                    "Rescheduling activation task for channel timeout=%s channel=%s",
+                    timeout,
+                    repr(channel),
+                )
                 schedule_task(self._activate_webhook_channel(channel, timeout))
 
     # Listeners

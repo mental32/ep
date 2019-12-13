@@ -5,16 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from collections import defaultdict
 from itertools import chain, starmap, cycle
-from typing import (
-    Tuple,
-    Dict,
-    Union,
-    Optional,
-    List,
-    Set,
-    TypeVar,
-    DefaultDict
-)
+from typing import Tuple, Dict, Union, Optional, List, Set, TypeVar, DefaultDict
 
 from discord import VoiceChannel
 from ep.core import Cog
@@ -90,6 +81,7 @@ class TextBanner:
 
 @Cog.export
 class BannerCog(Cog):
+    """Handle a guilds banner channels."""
     klass: T = TextBanner
 
     graph: DefaultDict[int, List[str]]
@@ -111,9 +103,7 @@ class BannerCog(Cog):
 
         self.graph = entry_mapping
 
-    async def _alloc_banner_slots(
-        self, category_id: int, fields: List[str]
-    ) -> Set[T]:
+    async def _alloc_banner_slots(self, category_id: int, fields: List[str]) -> Set[T]:
         category = self.client.get_channel(category_id)
 
         if category is None:
