@@ -121,9 +121,12 @@ class Tagging(Cog):
         self, name: str, body: str, tag_id: Optional[str] = None
     ) -> Tag:
         if tag_id is None:
-            while tag_id in self._tails:
+            while True:
                 tag_id = "".join(choice(ascii_letters) for _ in range(6))
-                await sleep(0)
+
+                if tag_id in self._tails:
+                    await sleep(0)
+                    continue
 
         self._tails[tag_id] = name
         unserialized = {"id": tag_id, "body": body}
