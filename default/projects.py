@@ -123,7 +123,7 @@ class Projects(Cog):
         kwargs = {"topic": url, "reason": f"Invoked by {message.author!s}"}
 
         match = await self.client.loop.run_in_executor(
-            None, partial(search, r"([^/]\w+)(?:/)([^/]\w+)$", url)
+            None, partial(search, r"([^/][\w-]+)(?:/)([^/].+)$", url)
         )
 
         if match is not None:
