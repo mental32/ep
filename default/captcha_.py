@@ -119,7 +119,7 @@ class Captcha(Cog):
             try:
                 future.result()  # Propagates any exceptions
             except TimeoutError:
-                await member.kick(reason="Captcha timeout exceeded.")
+                self.client.schedule_task(member.kick(reason="Captcha timeout exceeded."))
                 return
             finally:
                 self.flows.pop(member, None)
