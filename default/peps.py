@@ -17,24 +17,24 @@ class InvalidPEP(ValueError):
 class PEP(Cog):
     """A cog that deals with peps."""
 
-    BASE_URL: str = "https://www.python.org/dev/peps/pep-{ident}"
+    BASE_URL: str = "https://www.python.org/dev/peps/pep-{ident:04}"
 
     def __post_init__(self):
         self._session: ClientSession = ClientSession(loop=self.loop)
         self._cache: Dict[str, str] = {}
 
-    async def _fetch_pep(self, ident: str) -> str:
+    async def _fetch_pep(self, ident: int) -> str:
         """Check if a pep is valid.
 
         Paramters
         ---------
-        ident : :class:`str`
+        ident : :class:`int`
             The pep identifier, e.g. 8 or 3116
 
         Returns
         -------
         url : :class:`str`
-            The url of the pep, e.g. ``https://www.python.org/dev/peps/pep-8/``
+            The url of the pep, e.g. ``https://www.python.org/dev/peps/pep-0008/``
 
         Raises
         ------
@@ -46,6 +46,7 @@ class PEP(Cog):
 
         url = self.BASE_URL.format(ident=ident)
 
+        self.logger.info("Fetching pep %s", repr(url))
         async with self._session.get(url) as resp:
             valid = resp.status in range(200, 300)
 
@@ -57,7 +58,7 @@ class PEP(Cog):
 
     @Cog.regex(r"(?:pep|PEP) ?(?P<ident>\d{,12})")
     @Cog.wait_until_ready
-    async def lookup(self, message: Message, *, ident: str) -> None:
+    async def lookup(self, message: Message, *, ident: int) -> None:
         """Lookup a particular PEP."""
         assert self._session is not None
 
