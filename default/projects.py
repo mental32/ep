@@ -129,6 +129,7 @@ class Projects(Cog):
         if match is not None:
             name = "-".join(match.groups())
         else:
+            self.logger.error("Failed to match against %s", repr(url))
             name = url
 
         assert len(name) <= 80
