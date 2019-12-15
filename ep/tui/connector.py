@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 __all__ = ("BaseConnector", "DiscordClientConnector", "WebsocketConnector", "IndependantConnector")
 
-@dataclass
+@dataclass  # type: ignore
 class BaseConnector(ABC):
     """Base class for all connectors."""
     window: "ep.tui.Window"
@@ -35,7 +35,7 @@ class BaseConnector(ABC):
             widget.update(data, self.config.get("ep", {}).get("tui", {}))
 
     @abstractmethod
-    async def exhaust(self):
+    async def exhaust(self, *args, **kwargs):
         """Exhaust the connector."""
 
 
@@ -44,7 +44,7 @@ class WebsocketConnector(BaseConnector):
 
     __socket = None
 
-    async def exhaust(self, uri: str):
+    async def exhaust(self, uri: str):  # type: ignore
         async with websockets.connect(uri) as websocket:
             self.__socket = websocket
 
@@ -83,7 +83,7 @@ class DiscordClientConnector(BaseConnector, Client):
 
     # Public api
 
-    async def exhaust(self, token: str):
+    async def exhaust(self, token: str):  # type: ignore
         try:
             await self.start(token, bot=False)
         finally:

@@ -3,7 +3,10 @@ import os
 import sys
 from contextlib import suppress
 from socket import socket
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import ep
 
 import coloredlogs
 from discord.http import HTTPClient
@@ -11,7 +14,12 @@ from discord.http import HTTPClient
 __all__ = ("infer_token", "codeblock", "probe", "http_probe", "get_logger")
 
 
-def infer_token(envvar: str = "DISCORD_TOKEN", *, cleanup: Optional[Callable[[], Any]] = None, exit: bool = True) -> str:
+def infer_token(
+    envvar: str = "DISCORD_TOKEN",
+    *,
+    cleanup: Optional[Callable[[], Any]] = None,
+    exit: bool = True,
+) -> str:
     """Read an environment variable and possibly exit if its missing."""
     try:
         return os.environ[envvar]
@@ -65,6 +73,7 @@ async def http_probe(token: str, config: "ep.Config") -> bool:
             return True
     finally:
         await http.close()
+    return False
 
 
 def get_logger(

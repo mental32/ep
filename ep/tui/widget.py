@@ -2,11 +2,12 @@ from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Any, Union, List, Deque, Dict, TypeVar, Optional, TYPE_CHECKING
+from typing import Any, Union, List, Deque, Dict, TypeVar, Optional, TYPE_CHECKING, Callable
+
+from blessings import Terminal
 
 if TYPE_CHECKING:
     from ep.tui import Window
-
 
 K = TypeVar("K")  # pylint: disable=invalid-name
 V = TypeVar("V")  # pylint: disable=invalid-name
@@ -14,7 +15,7 @@ V = TypeVar("V")  # pylint: disable=invalid-name
 __all__ = ("AbstractWidget", "Console")
 
 
-def intersects(sub: Dict[str, Any], dom: [str, Any]) -> bool:
+def intersects(sub: Dict[str, Any], dom: Dict[str, Any]) -> bool:
     """Recursively assert sub intersects dom."""
     if not isinstance(sub, dict):
         return sub == dom
@@ -24,10 +25,9 @@ def intersects(sub: Dict[str, Any], dom: [str, Any]) -> bool:
     )
 
 
-@dataclass
+@dataclass  # type: ignore
 class AbstractWidget(ABC):
-    """
-    """
+    """An abstract widget."""
 
     root: Union["Window", "AbstractWidget"]
     _dirty: bool = True
@@ -80,7 +80,7 @@ class Console(AbstractWidget):
 
         return base + f" => {data['content']!r}"
 
-    formatters = {}
+    formatters: Dict[str, Callable[[Terminal, Dict], str]] = field(default_factory=dict)
 
     def __post_init__(self):
         self.inp_buf = deque(maxlen=512)

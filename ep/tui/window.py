@@ -6,13 +6,17 @@ import tty
 import traceback
 from functools import partial
 from contextlib import suppress, contextmanager
-from typing import Dict, Any, List, Type
+from typing import Dict, Any, List, Type, TYPE_CHECKING
 
 import aioconsole
 from blessings import Terminal
 
 from .connector import BaseConnector
 from .widget import Console
+
+if TYPE_CHECKING:
+    import ep
+    from ep.tui.widget import AbstractWidget
 
 __all__ = ("tty_raw", "Window")
 
@@ -37,7 +41,7 @@ class Window:
         self._connector = connector_klass(window=self, loop=loop, config=config)
         self._connector_kwargs = connector_kwargs
         self._terminal = Terminal()
-        self._widgets: List["Widget"] = []
+        self._widgets: List["AbstractWidget"] = []
 
     def __enter__(self):
         self.terminal.stream.write(self.terminal.enter_fullscreen)
