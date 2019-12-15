@@ -1,6 +1,5 @@
 """Implementation of the PEP Cog."""
 from contextlib import suppress
-from contextvars import ContextVar
 from typing import Dict
 
 from aiohttp import ClientSession
@@ -21,7 +20,7 @@ class PEP(Cog):
     BASE_URL: str = "https://www.python.org/dev/peps/pep-{ident}"
 
     def __post_init__(self):
-        self._session: ContextVar = ContextVar("session", default=None)
+        self._session: ClientSession = ClientSession(loop=self.loop)
         self._cache: Dict[str, str] = {}
 
     async def _fetch_pep(self, ident: str) -> str:
@@ -47,7 +46,7 @@ class PEP(Cog):
 
         url = self.BASE_URL.format(ident=ident)
 
-        async with self._session.get().get(url) as resp:
+        async with self._session.get(url) as resp:
             valid = resp.status in range(200, 300)
 
         if valid:
@@ -56,15 +55,11 @@ class PEP(Cog):
 
         raise InvalidPEP(ident)
 
-    @Cog.task
-    async def _setup_session(self):
-        self._session.set(ClientSession())
-
     @Cog.regex(r"(?:pep|PEP) ?(?P<ident>\d{,12})")
     @Cog.wait_until_ready
     async def lookup(self, message: Message, *, ident: str) -> None:
         """Lookup a particular PEP."""
-        assert self._session.get() is not None
+        assert self._session is not None
 
         try:
             url = await self._fetch_pep(ident)
