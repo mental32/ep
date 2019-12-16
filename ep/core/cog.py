@@ -423,6 +423,10 @@ class Cog:
 
                     # Pre-invokation predicates
                     for target, expected in attrs.items():
+
+                        if isinstance(expected, ConfigValue):
+                            expected = expected.resolve(bound_sig.arguments["self"].config)
+
                         head, *tail = target.split("_")
 
                         try:

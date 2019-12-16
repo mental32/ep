@@ -17,6 +17,7 @@ tagging.repository = "https://github.com/mental32/ep.tagging"
 
 captcha.enabled = false
 
+projects.index_channel_id = 654009312829767680
 projects.category_id = 653936235466719252
 projects.hosts = ["github\\.com", "gitlab\\.com"]
 

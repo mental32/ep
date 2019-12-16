@@ -22,7 +22,7 @@ ALLOCATED_MESSAGE: str = (
 class Projects(Cog):
     """Cog that reacts appropriately to project urls."""
 
-    _index_channel: int = 654009312829767680  # XXX: Figure out a way to cfg this.
+    _index_channel: int = ConfigValue("default", "projects", "index_channel_id")
 
     _default_kwargs = {
         "pattern": r"^(?:webhook!)?https?://($hosts)(?:.{0,200})$$",
