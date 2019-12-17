@@ -1,16 +1,13 @@
 """Implementation of the PEP Cog."""
 from contextlib import suppress
-from typing import Dict
+from itertools import takewhile
+from typing import Dict, Optional
 
 from aiohttp import ClientSession
 from discord import Message
 from ep import Cog
 
 __all__ = {"PEP"}
-
-
-class InvalidPEP(ValueError):
-    """Raised when a pep is invalid."""
 
 
 @Cog.export
@@ -23,7 +20,7 @@ class PEP(Cog):
         self._session: ClientSession = ClientSession(loop=self.loop)
         self._cache: Dict[str, str] = {}
 
-    async def _fetch_pep(self, ident: int) -> str:
+    async def _fetch_pep(self, ident: int) -> Optional[str]:
         """Check if a pep is valid.
 
         Paramters
@@ -33,14 +30,11 @@ class PEP(Cog):
 
         Returns
         -------
-        url : :class:`str`
+        url : Optional[:class:`str`]
             The url of the pep, e.g. ``https://www.python.org/dev/peps/pep-0008/``
-
-        Raises
-        ------
-        InvalidPEP
-            Raised when the pep is invalid.
         """
+        assert isinstance(ident, int)
+
         with suppress(KeyError):
             return self._cache[ident]
 
@@ -54,19 +48,22 @@ class PEP(Cog):
             self._cache[ident] = url
             return url
 
-        raise InvalidPEP(ident)
+        return None
 
-    @Cog.regex(r"(?:pep|PEP) ?(?P<ident>\d{,12})")
+    @Cog.regex(r"^(?:pep|PEP) ?(?P<span>[ \d]+)$")
     @Cog.wait_until_ready
-    async def lookup(self, message: Message, *, ident: int) -> None:
+    async def lookup(self, message: Message, *, span: str) -> None:
         """Lookup a particular PEP."""
         assert self._session is not None
 
-        try:
-            url = await self._fetch_pep(ident)
-        except InvalidPEP:
-            await message.channel.send(
-                f"{message.author.mention} - That's not a valid pep ({ident!r})"
-            )
-        else:
-            await message.channel.send(f"{message.author.mention} - {url}")
+        results = set(
+            [
+                await self._fetch_pep(ident)
+                for ident in map(int, takewhile(str.isdigit, span.split(" ")))
+            ]
+        )
+
+        results.discard(None)
+
+        urls = "\n".join(results)
+        await message.channel.send(f"{message.author.mention} - {urls}")
