@@ -39,6 +39,7 @@ RegexPattern = Union[str, Pattern]
 
 LITERAL_TYPES = (
     int,
+    str,
     float,
     list,
     tuple,
@@ -111,24 +112,33 @@ async def _decorated_regex(
         group_dict = match.groupdict()
         annotations = corofunc.__annotations__
 
-        kwargs_ = {}
+        kwargs_ = {**group_dict}
 
-        if group_dict and annotations:
-            kwargs_.update(group_dict.copy())
+        for name in (set(group_dict) & set(annotations)):
+            argument_annotation = annotations[name]
+            argument = value = group_dict[name]
 
-            for name in {*group_dict}.intersection({*annotations}):
-                argument_annotation = annotations[name]
-                argument = group_dict[name]
+            # TODO: Unions, Tuples, ...
 
-                # TODO: Unions, Tuples, ...
+            if argument_annotation in LITERAL_TYPES:
+                try:
+                    value = ast.literal_eval(argument)
+                except (ValueError, SyntaxError):
+                    value = argument
 
-                if argument_annotation in LITERAL_TYPES:
+            elif argument_annotation.__origin__ is Union:
+                for arg in argument_annotation.__args__:
                     try:
                         value = ast.literal_eval(argument)
                     except ValueError:
-                        value = argument
+                        continue
+                    else:
+                        break
 
-                    kwargs_[name] = value
+            else:
+                value = argument
+
+            kwargs_[name] = value
 
         kwargs.update(kwargs_)
 
