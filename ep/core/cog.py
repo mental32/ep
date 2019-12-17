@@ -437,7 +437,10 @@ class Cog:
                         # Further resolve nested attributes
                         # foo_bar_baz -> foo.bar.baz
                         for part in tail:
-                            base = getattr(base, part)
+                            try:
+                                base = getattr(base, part)
+                            except AttributeError:
+                                return
 
                         # Compare the resolved value with the excepted argument.
                         if base != expected:
