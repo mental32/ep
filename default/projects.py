@@ -81,7 +81,6 @@ class Projects(Cog):
             timeout = None
             now = datetime.now()
 
-            self.logger.info("Inspecting channel %s", repr(channel))
             async for message in channel.history(limit=None, oldest_first=True):
                 if message.webhook_id is not None:
                     timeout = None
