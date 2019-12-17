@@ -33,5 +33,5 @@ resource.paths = [
 banner.entries = [
     "category://633624313043353620",
     "Total members: {guild.member_count}",
-    "Server time: {now.strftime('%H:%M')}"
+    "{now.strftime('%a, %d %b %Y %H:%M')}"
 ]
