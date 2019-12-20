@@ -18,7 +18,7 @@ class PEP(Cog):
 
     def __post_init__(self):
         self._session: ClientSession = ClientSession(loop=self.loop)
-        self._cache: Dict[str, str] = {}
+        self._cache: Dict[int, str] = {}
 
     async def _fetch_pep(self, ident: int) -> Optional[str]:
         """Check if a pep is valid.
