@@ -4,10 +4,11 @@ from asyncio import Future, gather, sleep
 from dataclasses import dataclass, field
 from datetime import datetime
 from collections import defaultdict
+from contextlib import suppress
 from itertools import chain, starmap, cycle
 from typing import Tuple, Dict, Union, Optional, List, Set, TypeVar, DefaultDict
 
-from discord import VoiceChannel
+from discord import VoiceChannel, HTTPException
 from ep.core import Cog
 
 __all__ = ("BannerCog",)
@@ -72,7 +73,8 @@ class TextBanner:
         evaluated = self.eval_template(self.template, locals_=locals_)
 
         if evaluated != self._previous:
-            await self.channel.edit(name=evaluated)
+            with suppress(HTTPException):
+                await self.channel.edit(name=evaluated)
 
         self._previous = evaluated
 
