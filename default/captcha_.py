@@ -110,8 +110,7 @@ class Captcha(Cog):
             await member.add_roles(member_role)
             return
 
-        if member in self.flows:
-            return
+        assert member not in self.flows
 
         task = self.client.schedule_task(self._start_flow(member))
 
