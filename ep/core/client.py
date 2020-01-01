@@ -142,12 +142,9 @@ class Client(ClientBase):
                 else:
                     name = path.name
 
-                try:
-                    module = importlib.import_module(name)
-                except ImportError:
-                    print_exc()
-
+                module = importlib.import_module(name)
                 module_all = getattr(module, "__all__", [])
+
                 for obj in map(partial(getattr, module), module_all):
                     if (
                         isinstance(obj, type)
