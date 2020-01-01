@@ -131,6 +131,9 @@ class Projects(Cog):
             self.logger.error("Failed to match against %s", repr(url))
             name = url
 
+        if len(name) > 80:
+            name = name[:80]
+
         assert len(name) <= 80
 
         kwargs["name"] = name
