@@ -65,5 +65,5 @@ class PEP(Cog):
 
         results.discard(None)
 
-        urls = "\n".join(results)
-        await message.channel.send(f"{message.author.mention} - {urls}")
+        urls = "\n".join([f"- {result}" for result in results])
+        await message.channel.send(f"{message.author.mention}:\n{urls}")
