@@ -8,7 +8,7 @@ from typing import Set, List
 from discord import File
 from ep import Cog, ConfigValue
 
-from tagging import clone_repository
+from utils import clone_repository
 
 __all__ = ("Resource",)
 

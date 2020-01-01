@@ -1,5 +1,5 @@
 """Implementation of Tag Cog."""
-from asyncio import create_subprocess_shell, sleep, Future
+from asyncio import sleep, Future
 from asyncio.subprocess import PIPE
 from dataclasses import dataclass
 from typing import Set, Dict, Optional
@@ -14,23 +14,13 @@ from aiofiles import open as aiofiles_open
 from discord import Message
 from ep import Cog, ConfigValue
 
+from utils import clone_repository
+
 __all__ = ("Tagging",)
 
 
 class TagLookupError(LookupError):
     """Raised when no tag is found."""
-
-
-async def clone_repository(repository_url: str, repository_path: str) -> Path:
-    """Clone a git repsitory from a :class:`str` url into a :class:`str` path."""
-    proc = await create_subprocess_shell(
-        f"git clone {repository_url} {repository_path}", stdout=PIPE, stderr=PIPE
-    )
-
-    await proc.communicate()
-    assert proc.returncode == 0
-
-    return Path(repository_path)
 
 
 @dataclass
