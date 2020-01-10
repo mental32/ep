@@ -1,16 +1,19 @@
 """Guild heuristics cog."""
-from asyncio import gather, sleep
+from asyncio import gather, sleep, create_subprocess_shell
+from asyncio.subprocess import PIPE
 from collections import deque, Counter
 from typing import Optional, Awaitable
 from itertools import chain
 from functools import lru_cache
+from re import compile as re_compile
 
 
-from discord import Message, TextChannel, User, Guild
+from discord import Message, TextChannel, User, Guild, Game
 from ep import Cog, ConfigValue
 
 __all__ = ("Heuristics",)
 
+_RE_TIME = re_compile(r"time=([\d.]+)")
 
 @Cog.export
 class Heuristics(Cog):
@@ -65,6 +68,31 @@ class Heuristics(Cog):
                     counter[str(author)] += 1
 
         self.logger.info("Completed heuristic analysis.")
+
+    @Cog.task
+    @Cog.wait_until_ready
+    async def _ping_task(self) -> None:
+        proc = await create_subprocess_shell("ping 8.8.8.8", stdout=PIPE, stderr=PIPE)
+
+        # Read ahed one line to ignore the header:
+        # "PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.\n"
+        await proc.stdout.readline()
+
+        n = 0
+        while True:
+            line = await proc.stdout.readline()
+
+            if n % 5 == 0:
+                match = _RE_TIME.search(line.decode())
+
+                if match is None:
+                    self.logger.error(f"Could not match pattern {_RE_TIME!r} to line {line!r}")
+                    continue
+
+                activity = Game(f"with {match[1]!s} ms latency")
+                await self.client.change_presence(activity=activity)
+
+            n += 1
 
     # fmt: off
     @Cog.event(tp="on_message", message_author_bot=False, message_channel_guild_id=guild_id)
