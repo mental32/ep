@@ -1,6 +1,7 @@
 """Various utilities."""
 from pathlib import Path
 from asyncio import create_subprocess_shell
+from asyncio.subprocess import PIPE
 
 __all__ = ("clone_repository",)
 

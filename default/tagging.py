@@ -1,6 +1,5 @@
 """Implementation of Tag Cog."""
 from asyncio import sleep, Future
-from asyncio.subprocess import PIPE
 from dataclasses import dataclass
 from typing import Set, Dict, Optional
 from pathlib import Path
