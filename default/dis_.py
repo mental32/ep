@@ -6,7 +6,7 @@ from io import StringIO
 from discord import Message
 from ep import Cog, codeblock
 
-__all__ = {"Disassembler"}
+__all__ = ("Disassembler",)
 
 
 @Cog.export

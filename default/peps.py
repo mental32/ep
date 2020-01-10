@@ -7,7 +7,7 @@ from aiohttp import ClientSession
 from discord import Message
 from ep import Cog
 
-__all__ = {"PEP"}
+__all__ = ("PEP",)
 
 
 @Cog.export

@@ -9,7 +9,7 @@ from functools import lru_cache
 from discord import Message, TextChannel, User, Guild
 from ep import Cog, ConfigValue
 
-__all__ = {"Heuristics"}
+__all__ = ("Heuristics",)
 
 
 @Cog.export

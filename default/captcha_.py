@@ -13,7 +13,7 @@ from captcha.image import ImageCaptcha
 from discord import Member, Message, Role, File, Embed, Invite
 from ep import Cog, ConfigValue
 
-__all__ = {"Captcha"}
+__all__ = ("Captcha",)
 
 ASCII: str = ascii_uppercase + digits
 
