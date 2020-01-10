@@ -46,21 +46,12 @@ class Tagging(Cog):
 
     _repository_url: str = ConfigValue("default", "tagging", "repository")
 
-    def __post_init__(self) -> None:
+    @Cog.task
+    async def __ainit__(self):
         repository_path: str = mkdtemp()
-
-        task = self.client.schedule_task(
-            clone_repository(self._repository_url, repository_path)
-        )
-
-        def repository_hook_trigger(fut: Future) -> None:
-            path = fut.result()
-            self.logger.info("Cloned tagging repository into %s", repr(path))
-            self.client.schedule_task(self._hook_repository(path))
-
-        task.add_done_callback(repository_hook_trigger)
-
-        self._commands.add_exception_handler(self._on_tag_exception)
+        path = await clone_repository(self._repository_url, repository_path)
+        self.logger.info("Cloned tagging repository into %s", repr(path))
+        await self._hook_repository(path)
 
     @Cog.destructor
     def _cleanup_path(self) -> None:
