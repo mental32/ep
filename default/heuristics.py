@@ -51,6 +51,10 @@ class Heuristics(Cog):
             ]
         )
 
+        # Concurrently exhaust channel history iterators.
+        # Has to be hand made since no one at discord anticipated
+        # Mass channel history scraping, in case you were wondering
+        # why: ``histories = await gather(*bucket)`` was not used.
         while bucket:
             iterator = bucket.popleft()
             count = 0

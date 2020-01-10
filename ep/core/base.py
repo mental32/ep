@@ -26,6 +26,12 @@ class ClientBase(Client):
     """A base client."""
     logger = LOGGER
 
+    # A lot of basic functionality is borrowed from the ext.commands bot.
+    #
+    # I wish I could sublclass the needed functionallity but there's a lot
+    # of extra overhead associated with the commands.Bot class that I'd rather
+    # avoid.
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.extra_events = defaultdict(list)
