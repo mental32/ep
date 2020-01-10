@@ -48,8 +48,8 @@ class Mutex(click.Option):
 # Process arguments
 @click.command()
 @click.option("-c", "--config-path", cls=Mutex, type=Path, not_required_if=["generate_config"])
-@click.option("-C", "--generate-config", is_flag=True, , not_required_if=["config_path"])
-@click.option("--disable", is_flag=True)
+@click.option("-C", "--generate-config", is_flag=True, cls=Mutex, not_required_if=["config_path"])
+@click.option("--disable", is_flag=True, default=False)
 @click.option("--ws-port", type=int, default=WebsocketServer.port)
 @click.option("--ws-addr", type=str, default=WebsocketServer.host)
 # Configuration overloads
@@ -75,7 +75,7 @@ def main(**kwargs):  # fmt: on
     for key, value in [
         (value, kwargs[value])
         for value in overloads
-        if value in kwargs
+        if kwargs.get(value, None) is not None
     ]:
         config["ep"][key] = value
 
