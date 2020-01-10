@@ -26,7 +26,7 @@ class TagLookupError(LookupError):
 class Tag:
     """Representation of a tag."""
 
-    id: str  # pylint: disable=invalid-name
+    ident: str
     body: str
 
 
@@ -91,8 +91,8 @@ class Tagging(Cog):
                 async with aiofiles_open(path / aliased) as file:
                     data = json_loads(await file.read())
 
-                tails[data["id"]] = aliased
-                head[data["id"]] = aliased
+                tails[data["ident"]] = aliased
+                head[data["ident"]] = aliased
 
                 for alias in serialized["aliases"]:
                     head[alias] = aliased
@@ -109,7 +109,7 @@ class Tagging(Cog):
                     continue
 
         self._tails[tag_id] = name
-        unserialized = {"id": tag_id, "body": body}
+        unserialized = {"ident": tag_id, "body": body}
 
         async with aiofiles_open(self._repository_path / name, "w") as entry:
             await entry.write(json_dumps(unserialized))
