@@ -4,6 +4,7 @@ from datetime import datetime
 from functools import partial
 from re import Match, search
 
+from aiohttp import ClientSession
 from discord import Message, PermissionOverwrite, TextChannel
 
 from ep import Cog, ConfigValue
@@ -40,6 +41,11 @@ class Projects(Cog):
 
     _category_id: int = ConfigValue("default", "projects", "category_id")
     _member_role_id: int = ConfigValue("default", "guild_member_role")
+
+    session: ClientSession
+
+    def __post_init__(self):
+        self.session = ClientSession()
 
     # Internal
 
@@ -119,6 +125,14 @@ class Projects(Cog):
         assert message.content.startswith("webhook!")
 
         url = message.content[len("webhook!") :]
+
+        async with self.session.get(url) as resp:
+            if not resp.status in range(200, 300):
+                await message.channel.send(f"{message.author.mention} - I couldn't verify that link, I got a HTTP/{resp.status} back.", delete_after=3.0)
+                await sleep(2)
+                await message.delete()
+                return
+
         kwargs = {"topic": url, "reason": f"Invoked by {message.author!s}"}
 
         match = await self.client.loop.run_in_executor(
