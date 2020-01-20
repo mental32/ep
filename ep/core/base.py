@@ -22,7 +22,7 @@ from .cog import Cog
 LOGGER = _utils_get_logger(__name__)
 
 
-class ClientBase(Client):
+class BaseClient(Client):
     """A base client."""
     logger = LOGGER
 

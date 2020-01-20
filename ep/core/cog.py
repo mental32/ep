@@ -28,143 +28,14 @@ from typing import (
 )
 
 from discord import Message
-
 from ep import ConfigValue
+
+from ..event import Event, EventHandler
+from ..regex import RegexHandler, FormattedRegexHandler, RegexPattern
 
 __all__ = ("Cog",)
 
 CoroutineFunction = Callable[..., Coroutine]
-RegexPattern = Union[str, Pattern]
-
-
-LITERAL_TYPES = (
-    int,
-    str,
-    float,
-    list,
-    tuple,
-    dict,
-    set,
-    frozenset,
-)
-
-
-def _event(
-    corofunc: CoroutineFunction,
-    event_type: str = "",
-    inject: Optional[Callable[[CoroutineFunction], CoroutineFunction]] = None,
-) -> CoroutineFunction:
-    if not iscoroutinefunction(corofunc) or (
-        isinstance(corofunc, partial) and not iscoroutinefunction(corofunc.func)
-    ):
-        raise TypeError("`corofunc` must be a coroutine function.")
-
-    if not event_type:
-        event_type = corofunc.__name__
-
-    if callable(inject):
-        _corofunc = inject(corofunc)
-    else:
-        _corofunc = corofunc
-
-    if _corofunc is not corofunc:
-        _corofunc = functools.wraps(corofunc)(_corofunc)
-
-    _corofunc.__event_listener__ = event_type
-
-    return _corofunc
-
-
-# fmt: off
-async def _decorated_regex(
-    pattern: Pattern,
-    corofunc: Callable,
-    filter_: Union[Callable[[Match], bool], bool, None] = (lambda match: match is None),
-    *,
-    args,
-    kwargs,
-) -> Any:
-    # Named groups in a pattern have the potential to be arguments in the signiture
-    kwargs.update(dict(zip(pattern.groupindex, cycle([None]))))
-
-    bound = signature(corofunc).bind(*args, **kwargs)
-
-    try:
-        content = bound.arguments["message"].content
-    except KeyError:
-        if not any(isinstance(arg, Message) and (content := arg.content) for arg in bound.args):
-            raise ValueError("could not infer message object (needed for a regex match.)")
-
-    filter_ = {
-        None: (lambda match: match is None),
-        True: (lambda _: True),
-        False: (lambda _: False),
-    }.get(filter_, filter_)
-
-    loop = asyncio.get_event_loop()
-    match = await loop.run_in_executor(None, partial(pattern.fullmatch, content))
-    del loop
-
-    if filter_(match):
-        return  # TODO: Should we raise here?
-
-    if match is not None:
-        group_dict = match.groupdict()
-        annotations = corofunc.__annotations__
-
-        kwargs_ = {**group_dict}
-
-        for name in (set(group_dict) & set(annotations)):
-            argument_annotation = annotations[name]
-            argument = value = group_dict[name]
-
-            # TODO: Unions, Tuples, ...
-
-            if argument_annotation in LITERAL_TYPES:
-                try:
-                    value = ast.literal_eval(argument)
-                except (ValueError, SyntaxError):
-                    value = argument
-
-            elif argument_annotation.__origin__ is Union:
-                for arg in argument_annotation.__args__:
-                    try:
-                        value = ast.literal_eval(argument)
-                    except ValueError:
-                        continue
-                    else:
-                        break
-
-            else:
-                value = argument
-
-            kwargs_[name] = value
-
-        kwargs.update(kwargs_)
-
-    return await corofunc(*args, **kwargs)
-# fmt: on
-
-
-@dataclass
-class Group:
-    """A semantically bound grouping of various events."""
-
-    _exception_handlers: List[Callable[[BaseException], Any]] = field(
-        init=False, default_factory=list
-    )
-
-    def add_exception_handler(self, handler: Callable[[BaseException], Any]) -> None:
-        """Adds `handler` to the list of exception handlers."""
-        self._exception_handlers.append(handler)
-
-    async def raise_exception(self, exc: BaseException, corofunc, args) -> None:
-        """Trigger the exception handlers with ``exc``."""
-
-        for handler in self._exception_handlers:
-            with suppress(Exception):
-                if iscoroutine((coro := handler(exc, corofunc, args))):
-                    await coro
 
 
 class Cog:
@@ -376,7 +247,7 @@ class Cog:
         tp: str = "",  # pylint: disable=invalid-name
         group: Optional[Group] = None,
         **attrs: Any,
-    ):
+    ) -> Union[Event, EventHandler]:
         """Mark a coroutine function as an event listener.
 
         >>> @Cog.event
@@ -403,9 +274,6 @@ class Cog:
 
         Parameters
         ----------
-        _corofunc : Optional[:class:`CoroutineFunction`]
-            When used directly as a decorator this is the function that is
-            being marked.
         tp : :class:`str`
             The type of event to listen out for.
         group : :class:`ep.Group`
@@ -413,67 +281,15 @@ class Cog:
         **attrs : Any
             Implemented for presence based rich predicates.
         """
+        if not tp or _corofunc is None:
+            raise ValueError("Must specify a ``tp`` argument or a coroutine function.")
+
+        event = Event(tp, attrs=attrs, group=group)
+
         if _corofunc is not None:
-            return _event(_corofunc, event_type=tp)
+            return event(_corofunc)
 
-        if attrs:
-
-            def decorate(corofunc: CoroutineFunction):
-                if isinstance(corofunc, partial):
-                    signature_ = signature(corofunc.func)
-                else:
-                    signature_ = signature(corofunc)
-
-                @wraps(corofunc)
-                async def decorated(*args, **kwargs):
-                    nonlocal signature_, attrs, group
-
-                    # Bind the signature over the current arguments
-                    bound_sig = signature_.bind(*args, **kwargs)
-
-                    # Pre-invokation predicates
-                    for target, expected in attrs.items():
-
-                        if isinstance(expected, ConfigValue):
-                            expected = expected.resolve(bound_sig.arguments["self"].config)
-
-                        head, *tail = target.split("_")
-
-                        try:
-                            base = bound_sig.arguments[head]
-                        except KeyError:
-                            raise NameError(f"name {head!r} is not defined.")
-
-                        # Further resolve nested attributes
-                        # foo_bar_baz -> foo.bar.baz
-                        for part in tail:
-                            try:
-                                base = getattr(base, part)
-                            except AttributeError:
-                                return
-
-                        # Compare the resolved value with the excepted argument.
-                        if base != expected:
-                            # Failed to satisfy comparison, return eagerly.
-                            return
-
-                    try:
-                        return await corofunc(*args, **kwargs)
-                    except Exception as exc:
-                        if group is not None:
-                            await group.raise_exception(exc, corofunc, bound_sig)
-                        raise
-
-                return _event(corofunc, event_type=tp, inject=(lambda _: decorated))
-
-            return decorate
-
-        if tp:
-            return partial(_event, event_type=tp)
-
-        raise ValueError(
-            "Must supply at least one of: ``tp``, ``attrs``, or a coroutine function."
-        )
+        return event
 
     @staticmethod
     def regex(
@@ -514,25 +330,17 @@ class Cog:
             This is raised if the message object could not be found.
         """
         assert "_corofunc" not in attrs
-        wrapped = Cog.event(tp="on_message", **attrs)
-        kwargs_ = {
+
+        kwargs = {
             "filter_": filter_,
             "pattern": re_compile(pattern)
             if not isinstance(pattern, Pattern)
             else pattern,
         }
 
-        def decorator(corofunc: CoroutineFunction):
-            kwargs_["corofunc"] = corofunc
+        wrapped = Event("on_message", cls=RegexHandler, attrs=attrs)
+        return partial(wrapped, **kwargs)
 
-            async def decorated(*args, **kwargs):
-                kwargs_["args"] = args
-                kwargs_["kwargs"] = kwargs
-                return await _decorated_regex(**kwargs_)
-
-            return wrapped(decorated)
-
-        return decorator
 
     @staticmethod
     def formatted_regex(
@@ -556,31 +364,9 @@ class Cog:
             Any subsequent attrs to filter against, see :meth:`Cog.event`
         """
         assert "_corofunc" not in attrs
-        wrapped = Cog.event(tp="on_message", **attrs)
 
         if not isinstance(pattern, str):
             raise TypeError("Bad pattern.")
 
-        kwargs_ = {"filter_": filter_}
-
-        def decorator(corofunc: CoroutineFunction):
-            kwargs_["corofunc"] = corofunc
-
-            @wraps(corofunc)
-            async def decorated(*args, **kwargs):
-                bound = signature(corofunc).bind(*args, **kwargs)
-                assert "self" in bound.arguments
-
-                template = Template(pattern)
-                fmt = template.substitute(formatter(bound.arguments["self"].client))
-                compiled_pattern = re_compile(fmt)
-
-                kwargs_.update(
-                    {"pattern": compiled_pattern, "args": args, "kwargs": kwargs}
-                )
-
-                return await _decorated_regex(**kwargs_)
-
-            return wrapped(decorated)
-
-        return decorator
+        wrapped = Event("on_message", cls=FormattedRegexHandler, attrs=attrs)
+        return partial(wrapped, filter_=filter_, pattern=pattern)
