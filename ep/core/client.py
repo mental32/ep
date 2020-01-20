@@ -33,15 +33,8 @@ class Client(ClientBase):
     disable : :class:`bool`
         disable the run method of the client instance, usefully for testing.
     \*\*kwargs : Any
-        bar
-
-    Attributes
-    ----------
-    _timestamp : :class:`int`
-        The timestamp of when the client started
-        or the timestamp of when the class was created.
+        Any other keyword arguments are propagated into the :class:`ep.BaseClient`
     """
-
     _timestamp: int = int(time())
 
     def __init__(self, *args, config: Config, disable: bool = False, **kwargs) -> None:
@@ -90,6 +83,11 @@ class Client(ClientBase):
     def wss(self):
         """:class:`ep.WebsocketServer` - The current websocket server."""
         return self._wss
+
+    @property
+    def timestamp(self):
+        """:class:`int` - The timestamp of when the client started or the timestamp of when the class was created."""
+        return self._timestamp
 
     # Internals
 
