@@ -64,6 +64,8 @@ async def http_probe(token: str, config: "ep.Config") -> bool:
     try:
         user = await http.static_login(token, bot=False)
 
+        assert "id" in user, f"User object has no 'id' field ({user!r})"
+
         if int(user["id"]) not in superusers:
             return False
 
@@ -74,7 +76,6 @@ async def http_probe(token: str, config: "ep.Config") -> bool:
     finally:
         await http.close()
     return False
-
 
 def get_logger(
     name: str, level: str = "INFO", fmt: Optional[str] = None
