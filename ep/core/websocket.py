@@ -48,7 +48,8 @@ class WebsocketServer:
             self._sockets.remove(socket)
 
             with suppress(Exception):
-                socket.close()
+                await socket.close()
+                await socket.wait_closed()
 
             del socket
 
