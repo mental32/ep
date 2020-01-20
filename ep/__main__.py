@@ -55,7 +55,7 @@ class Mutex(click.Option):
 # Configuration overloads
 @click.option("--socket-channel", type=str, default=None)
 @click.option("--socket-emit", type=bool, default=None)
-@click.option("--cogpath", type=Path, default=None)
+@click.option("--cog-path", type=Path, default=None)
 def main(**kwargs):  # fmt: on
     if kwargs["generate_config"]:
         print(Config.default)

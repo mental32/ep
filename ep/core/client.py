@@ -48,10 +48,10 @@ class Client(ClientBase):
         super().__init__(*args, **kwargs)
 
         self.__socket_noloop = set()
-
         self._config = config
-        if "cogpath" in self._config["ep"]:
-            self.load_cogs(config.fp.parent.joinpath(self._config["ep"]["cogpath"]))
+
+        if "cog_path" in self._config["ep"]:
+            self.load_cogs(config.fp.parent.joinpath(self._config["ep"]["cog_path"]))
 
         if disable or "EP_DISABLED" in os.environ:
             self.run = lambda *_, **__: None
