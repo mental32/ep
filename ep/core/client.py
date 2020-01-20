@@ -14,14 +14,14 @@ from traceback import print_exc
 
 from discord import TextChannel
 
-from .cog import Cog
-from .base import ClientBase
-from .websocket import WebsocketServer
 from ..config import Config
 from ..utils import codeblock, infer_token
+from .cog import Cog
+from .base import BaseClient
+from .websocket import WebsocketServer
 
 
-class Client(ClientBase):
+class Client(BaseClient):
     r"""A hard client implementation used as default.
 
     Parameters
