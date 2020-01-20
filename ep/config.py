@@ -77,14 +77,19 @@ class Config(dict):
 
 class ConfigValue:
     """A class for describing configuration based values with lazy resolution."""
-    _sentinel = object()
 
-    def __init__(self, *path, default: Any = _sentinel):
+    def __init__(self, *path, default: Any = None):
         self.path = path
+        self.default = default
 
     def resolve(self, config: Config) -> Any:
         """Resolve the ConfigValue from a Config."""
         target = config
-        for part in self.path:
-            target = target[part]
-        return target
+
+        try:
+            for part in self.path:
+                target = target[part]
+        except KeyError:
+            return self.default
+        else:
+            return target
